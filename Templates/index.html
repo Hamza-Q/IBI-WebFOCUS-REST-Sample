@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <h1>Welcome to Company</h1>
+    <h2>Login</h2>
+</head>
+<body>
+
+<form action="/login_auth" method="POST">
+	<input type="text" name = "user_name" placeholder="user_id" required/> </br>
+	<input type="password" name = "password" placeholder="password" required/> </br>
+
+	<input type="submit" value = Login />
+	{% if error %}
+		<p class="error"><strong>Error:</strong> {{error}}</p>
+	{% endif %}
+</form>
+
+</body>
+</html>

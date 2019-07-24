@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Run an existing ReportCaster Schedule</title>
+    <h1>Company X</h1>
+    <p>Run a Scheduled Item:</p>
+    <a href='/home' >Go Home</a>
+
+
+    <br>
+    
+</head>
+<body>
+    <form action="/schedule_item" target="return_frame" method="post">
+        Report Name: <input type="text" name = "schedule_name" id="schedule_name" placeholder= "Default: TestSchedule"/>.sch
+        <input type="submit" value = "Submit" />
+    </form>
+ <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
+    <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
+    <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
+    <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
+    <iframe name="return_frame" style="position: absolute; height: 70%; width: 80% "></iframe>
+
+
+</body>
+</html>

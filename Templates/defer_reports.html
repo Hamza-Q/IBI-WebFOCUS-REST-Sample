@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Defer Reports</title>
+    <h1>Company X</h1>
+    <br>
+    <a href='/home' >Go Home</a>
+    <h3>Run a Deferred Report</h3>
+    <h4>Process:</h4>
+    <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.
+        
+    </p>
+    
+
+
+    <br>
+    
+</head>
+<body>
+    <form action="/defer_report" method="post">
+        Report Name: 
+        <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/>.fex
+        <br>
+        Ticket Description:
+        <input type="text" name = "IBIRS_tDesc" id="IBIRS_tDesc" placeholder = "Enter ticket description (required)" required/>
+        <br>
+        <input type="submit" value = "Submit" />
+    </form>
+    <br>
+
+    <h3>View a Deferred Report</h3>
+    
+    {% if session.get('deferred_items') %}
+        <form action="/get_deferred_report" target="report_frame" method="post">
+            <p>Select a deferred report. </p>
+            <select>
+                {% for ticket_name, report_name in session['deferred_items'].items() %}
+                    <option value="{{ticket_name}}">Report Name: {{report_name}} ; Ticket Name: {{ticket_name}}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value = "Get Selected Report"/>
+        </form>
+    {% else %}
+            <p>No reports deferred from this session</p>
+    {% endif %}
+
+    <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
+    <iframe name="report_frame" style="position: absolute; height: 70%; width: 80% ">Report Appears Here</iframe>
+
+
+</body>
+</html>

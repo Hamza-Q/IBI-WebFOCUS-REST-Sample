@@ -7,9 +7,8 @@ Hamza_Qureshi@ic.ibi.com
 
 # Import Flask Library
 from flask import Flask, render_template, request, session, url_for, redirect, flash
-# import flask_cors
 import requests
-# wfrs is an API wrapper for WebFOCUS Rest calls, currently in development
+# wfrs is an API wrapper for WebFOCUS REST calls, currently in development
 import wfrs
 import xml.etree.ElementTree as ET
 
@@ -86,7 +85,7 @@ def login_auth():
         return redirect(url_for('home'))
     else:
         # returns an error message
-        error = 'Invalid email or password'
+        # error = 'Invalid email or password'
         return redirect(url_for('index'))
 
 
@@ -111,20 +110,22 @@ def run_reports():
     return render_template('run_reports.html')
 
 
-# TODO: Test CORS policy for reports using css/js from ibi_apps
+# TODO: Test CORS policy for reports using css/js from ibi_apps via /client_app_redirect
 @app.route('/run_report', methods=['GET', 'POST'])
 #@flask_cors.cross_origin(origins='localhost', headers=['Content-Type', 'Authorization'])
 def run_report():
     report_name = request.form.get('report_name')
+    print(report_name)
     if not report_name:
         report_name = "Report1"
     wf_sess = wf_login()
     
+    '''
     url = 'http://localhost:8080/ibi_apps/rs/'
     folderName = 'IBFS:/WFC/Repository/Public/'
     folderName2 = 'Public'
     reportName = 'Report1.fex'
-    '''
+    
     payload = dict()
     payload['IBIRS_action'] = 'run'
     payload['IBIRS_clientPath'] = 'http://localhost:5000/run_report'
@@ -133,34 +134,24 @@ def run_report():
     payload['IBFS_comp_pass'] = 'srvadmin'
     payload['IBIRS_path'] = folderName+reportName
     '''
-
-    IBIRS_clientPath = 'http://localhost:5000/client_app_redirect',
+    # Doesn't seem to change anything
+    IBIRS_clientPath = 'http://localhost:5000',
     IBIRS_htmlPath = 'http://localhost:8080/ibi_apps/ibi_html'    
-    #IBIRS_clientPath='http://wwww.google.com'
-    #IBIRS_htmlPath='http://www.bing.com'
+    # IBIRS_clientPath='http://wwww.google.com'
+    # IBIRS_htmlPath='http://www.bing.com'
 
     payload = { 
-        'IBFS_service': 'ibfs',
-        'IBFS_comp_user': 'srvadmin',
-        'IBFS_comp_pass': 'srvadmin',
-        'doSubmit': '',
-        'IBIWF_credAutoPrompt': 'false',
-        'IBIRS_path': 'IBFS:/WFC/Repository/Public/Report1.fex',
+        'IBIRS_action': 'run',
         'IBIRS_clientPath': IBIRS_clientPath,
         'IBIRS_htmlPath': IBIRS_htmlPath,
-    }
-    payload2 = { 
-        'IBIRS_action':'run',
-
     }
     
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-        payload2['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
 
     response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{report_name}.fex',
-                            data = payload2 )
+                            data = payload )
     # response = wf_sess.mr_run_report(folderName2, reportName, 'IBIRS_clientPath=%s' % IBIRS_clientPath)
     #breakpoint()
     #with open('test.html', 'w') as f:
@@ -171,28 +162,21 @@ def run_report():
     print(response)
     # print(response.content)
     return response.content
-'''
-# used to receive webfocus report html local files from proper destination
-@app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
-@flask_cors.cross_origin(origins='localhost', headers=['Content-Type', 'Authorization'])
-def client_app_redirect(page):
-    # return redirect('http://localhost:8080/ibi_apps/'+page)
-    #headers = request.headers
-    
-    #url = 'http://localhost:8080/ibi_apps/' + page
 
-    #response = requests.get(url, data=request.data, headers=headers)
-    #print(response)
-    # breakpoint()
+# Used to receive webfocus report local files (js/css) from proper source
+# Currently always sends response header as {'Content-Type': 'text/html'} even for .js/.css files
+@app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
+def client_app_redirect(page):
+    #headers = request.headers
+    base_url = 'http://localhost:8080/ibi_apps/' + page
     wf_sess=wf_login()
-    wf_sess.headers['Accept']=request.headers['Accept']
-    print(request.headers, request.url)
-    response = wf_sess.get('http://localhost:8080/ibi_apps/'+page)
+    # wf_sess.headers['Accept']=request.headers['Accept']
+    response = wf_sess.get(base_url+page)
     # breakpoint()
-    print(response.headers, response.url)
+    # print(response.headers, response.url)
     return response.content
     #return response.content
-'''
+
 
 @app.route('/schedules')
 def schedules():
@@ -273,7 +257,33 @@ def defer_report():
     print(session)
     return redirect(url_for('defer_reports'))
 
+# Retrieves deferred report data
+@app.route('/get_deferred_report', methods=['GET', 'POST'])
+def get_deferred_report():
+    ticket_name = request.form.get('ticket_name')
+    print(ticket_name)
+    if not ticket_name:
+        return "Error: No ticket selected"
+    
+    wf_sess = wf_login()
 
+    payload = { 
+        'IBIRS_action': 'getReport',
+        'IBIRS_service': 'defer',
+        'IBIRS_htmlPath': 'http://localhost:8080/ibi_apps/ibi_html/'
+    }
+    payload['IBIRS_ticketName'] = ticket_name
+
+    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
+        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+
+    # works with post request but not get
+    response = wf_sess.post('http://localhost:8080/ibi_apps/rs',
+                            data = payload )
+    print(response)
+    print(response.content)
+    return response.content
+    
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)
     app.secret_key="IBI"

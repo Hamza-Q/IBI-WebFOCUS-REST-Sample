@@ -282,8 +282,8 @@ def get_deferred_report():
     # works with post request but not get
     response = wf_sess.post('http://localhost:8080/ibi_apps/rs',
                             data = payload )
-    print(response)
-    print(response.content)
+    # print(response)
+    # print(response.content)
     return response.content
     
 
@@ -331,8 +331,8 @@ def deferred_reports_table():
             
 
         deferred_tickets[item_name] = item_dict
-        print(item.attrib)
-    tickets_print = pprint.pformat(deferred_tickets)
+        # print(item.attrib)
+    # tickets_print = pprint.pformat(deferred_tickets)
     # TODO: use an OrderedDict to sort by datecreated
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets)
 

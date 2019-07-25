@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <a href="/home">Go Home</a>
+    <a href="/home">Go Home</a><br>
 
 </head>
 <body>
-
+<div style="display:inline-table">
 {% with messages = get_flashed_messages() %}
    {% if messages %}
       {% for message in messages %}
@@ -34,13 +34,13 @@
 			<td>{{item_dict['desc']}}</td>
 			<td>{{item_dict['status']}}</td>
             <td>
-			<form method="post" action="update_tag" class="inline">
+			<form method="post" action="update_tag" class="inline" target="report_frame">
 			    <input type="hidden" name="name" value="{{name}}" /> 
 			    <button type="submit" name="accept_tag" value="true" class="link-button">
 			    Save Item
 			    </button>
             </form>
-            <form method="post" action="get_deferred_report" class="inline">
+            <form method="post" action="get_deferred_report" class="inline" target="report_frame">
                     <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button">View Item</button>
             </form>
             </td>
@@ -50,9 +50,11 @@
 	{% endfor %}
 	</table>
 	<br>
-
-
-
+</div>
+<div style="display:inline-block">
+<p>Note: Reports will show up in the frame below.</p>
+    <iframe name="report_frame" style="position: absolute; height: 80%; width: 50% ">Report Appears Here</iframe>
+</div>
 
 
 

@@ -11,6 +11,8 @@ import requests
 # wfrs is an API wrapper for WebFOCUS REST calls, currently in development
 import wfrs
 import xml.etree.ElementTree as ET
+import pprint
+import datetime
 
 # sha256 hashing for password encryption - TBC
 # import sha256
@@ -168,7 +170,7 @@ def run_report():
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
     #headers = request.headers
-    base_url = 'http://localhost:8080/ibi_apps/' + page
+    base_url = 'http://localhost:8080/ibi_apps/'
     wf_sess=wf_login()
     # wf_sess.headers['Accept']=request.headers['Accept']
     response = wf_sess.get(base_url+page)
@@ -284,6 +286,57 @@ def get_deferred_report():
     print(response.content)
     return response.content
     
+
+@app.route('/deferred_reports_table', methods=['GET'])
+def deferred_reports_table():
+    if "user_name" not in session:
+        return redirect('/')
+    wf_sess = wf_login()
+    # retrieve list of deferred tickets
+    base_url = "http://localhost:8080/ibi_apps/rs"
+    payload = {"IBIRS_action":"listTickets"}
+    payload['IBIRS_service'] = 'defer'
+    payload['IBIRS_filters'] = payload['IBIRS_args'] = '__null'
+    payload['IBIWF_SES_AUTH_TOKEN']=wf_sess.IBIWF_SES_AUTH_TOKEN
+    response = wf_sess.get(base_url, params=payload) # will be xml
+    # convert xml response to minimal dict for easy access
+    # breakpoint()
+    tree = ET.fromstring(response.text)
+    root = tree.find('rootObject')
+
+    deferred_tickets = dict()
+
+    for item in root:
+        item_dict = {}
+        item_name = item.attrib['name']
+        item_dict['desc'] = item.attrib['description']
+        # 13 digit unix epoch time in ms listed in xml
+        # Convert to 10 digit secs unixtime then format as datetime string
+        unixtime_created_ms = int(item.attrib['createdOn'])
+        unixtime_created = unixtime_created_ms/1000
+        datetime_created = datetime.datetime.fromtimestamp(unixtime_created)
+        item_dict['creation_time'] = datetime_created.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # status and properties are a child of item in xml
+        for node in item:
+            # Create sub elements
+            if node.tag=='status':
+                item_dict['status'] = node.attrib['name']
+
+            # parse property tagged entries; reportname is an attribute
+            if node.tag =='properties':
+                for property_node in node:
+                    if property_node.attrib['key'] == 'IBIMR_fex_name':
+                        item_dict['report_name'] = property_node.attrib['value']
+            
+
+        deferred_tickets[item_name] = item_dict
+        print(item.attrib)
+    tickets_print = pprint.pformat(deferred_tickets)
+    # TODO: use an OrderedDict to sort by datecreated
+    return render_template("deferred_reports_table.html", deferred_items = deferred_tickets)
+
+
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)
     app.secret_key="IBI"

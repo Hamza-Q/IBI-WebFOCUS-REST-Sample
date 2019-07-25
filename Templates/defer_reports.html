@@ -30,10 +30,13 @@
     <br>
 
     <h3>View a Deferred Report</h3>
+    <br>
+    <a href="/deferred_reports_table">View Table of all deferred reports</a>
     
     {% if session.get('deferred_items') %}
+
         <form action="/get_deferred_report" target="report_frame" method="post">
-            <p>Select a deferred report. </p>
+            <p>Select a deferred report created this session. </p>
             <select name="ticket_name">
                 {% for ticket_name, report_name in session['deferred_items'].items() %}
                     <option value="{{ticket_name}}">Report Name: {{report_name}} ; Ticket Name: {{ticket_name}}</option>

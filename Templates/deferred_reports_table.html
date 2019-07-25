@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <a href="/home">Go Home</a>
+
+</head>
+<body>
+
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+      {% for message in messages %}
+         {{ message }}
+      {% endfor %}
+   {% endif %}
+{% endwith %}
+
+{% if error %}
+      <p><strong>Error:</strong> {{ error }}
+{% endif %}
+
+<h2>Deferred Reports:</h2>
+	<table border=1>
+	<th>Data/Time Submitted</th>
+	<th>Report Name</th>
+	<th>Description</th>	
+    <th>Status</th>
+    <th>Action</th>
+
+
+	{% for name, item_dict in deferred_items.items() %}
+		<tr>
+			<td>{{item_dict['creation_time']}}</td>
+			<td>{{item_dict['report_name']}}</td>
+			<td>{{item_dict['desc']}}</td>
+			<td>{{item_dict['status']}}</td>
+            <td>
+			<form method="post" action="update_tag" class="inline">
+			    <input type="hidden" name="name" value="{{name}}" /> 
+			    <button type="submit" name="accept_tag" value="true" class="link-button">
+			    Save Item
+			    </button>
+            </form>
+            <form method="post" action="get_deferred_report" class="inline">
+                    <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button">View Item</button>
+            </form>
+            </td>
+            
+				
+		</tr>
+	{% endfor %}
+	</table>
+	<br>
+
+
+
+
+
+
+</body>
+</html>

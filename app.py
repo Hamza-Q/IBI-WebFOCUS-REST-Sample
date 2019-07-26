@@ -21,12 +21,23 @@ import datetime
 # Initialize app
 app = Flask(__name__)
 app.secret_key = "IBI"
-
+ibi_client_protocol = "http"
+ibi_client_host = "localhost"
+ibi_client_port = "8080"
+ibi_rest_url =  ibi_client_protocol + '://' +  \
+                ibi_client_host + ':' +     \
+                ibi_client_port + '/' +     \
+                'ibi_apps/rs'
 
 # creates and returns a signed in webfocus session object
+# TODO: Add proper security
 def wf_login():
     wf_sess = wfrs.Session()
-    wf_sess.mr_sign_on()
+    wf_sess.mr_sign_on(
+        protocol = ibi_client_protocol, 
+        host = ibi_client_host, 
+        port = ibi_client_port
+    )
     return wf_sess
 
 
@@ -151,7 +162,7 @@ def run_report():
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-
+    # TODO: Remove hardcoded URL
     response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{report_name}.fex',
                             data = payload )
     # response = wf_sess.mr_run_report(folderName2, reportName, 'IBIRS_clientPath=%s' % IBIRS_clientPath)
@@ -167,17 +178,14 @@ def run_report():
 
 # Used to receive webfocus report local files (js/css) from proper source
 # Currently always sends response header as {'Content-Type': 'text/html'} even for .js/.css files
+# TODO: Remove hardcoded URL
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
     #headers = request.headers
-    base_url = 'http://localhost:8080/ibi_apps/'
-    wf_sess=wf_login()
-    # wf_sess.headers['Accept']=request.headers['Accept']
+    base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
+    wf_sess = wf_login()
     response = wf_sess.get(base_url+page)
-    # breakpoint()
-    # print(response.headers, response.url)
     return response.content
-    #return response.content
 
 
 @app.route('/schedules')
@@ -200,6 +208,7 @@ def schedule_item():
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
+    # TODO: Remove hardcoded URL
     response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{schedule_name}.sch',
                             data = payload )
     # print(response)
@@ -293,12 +302,11 @@ def deferred_reports_table():
         return redirect('/')
     wf_sess = wf_login()
     # retrieve list of deferred tickets
-    base_url = "http://localhost:8080/ibi_apps/rs"
     payload = {"IBIRS_action":"listTickets"}
     payload['IBIRS_service'] = 'defer'
     payload['IBIRS_filters'] = payload['IBIRS_args'] = '__null'
     payload['IBIWF_SES_AUTH_TOKEN']=wf_sess.IBIWF_SES_AUTH_TOKEN
-    response = wf_sess.get(base_url, params=payload) # will be xml
+    response = wf_sess.get(ibi_rest_url, params=payload) # will be xml
     # convert xml response to minimal dict for easy access
     # breakpoint()
     tree = ET.fromstring(response.text)
@@ -333,10 +341,15 @@ def deferred_reports_table():
         deferred_tickets[item_name] = item_dict
         # print(item.attrib)
     # tickets_print = pprint.pformat(deferred_tickets)
-    # TODO: use an OrderedDict to sort by datecreated
+
+    # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated, most to least recent
+    deferred_tickets = sorted(deferred_tickets.items(), key= lambda x: x[1]['creation_time'], reverse=True)
+
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets)
 
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)
-    app.secret_key="IBI"
+    # secret key randomly generated via commandline:
+    # python -c 'import os; print(os.urandom(16))'
+    app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'

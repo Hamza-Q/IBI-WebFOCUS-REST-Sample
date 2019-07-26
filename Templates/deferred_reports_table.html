@@ -26,23 +26,27 @@
     <th>Status</th>
     <th>Action</th>
 
-
-	{% for name, item_dict in deferred_items.items() %}
+    
+	{% for name, item_dict in deferred_items %}
 		<tr>
-			<td>{{item_dict['creation_time']}}</td>
-			<td>{{item_dict['report_name']}}</td>
-			<td>{{item_dict['desc']}}</td>
-			<td>{{item_dict['status']}}</td>
+			<td>{{item_dict.creation_time}}</td>
+			<td>{{item_dict.report_name}}</td>
+			<td>{{item_dict.desc}}</td>
+			<td>{{item_dict.status}}</td>
             <td>
-			<form method="post" action="update_tag" class="inline" target="report_frame">
-			    <input type="hidden" name="name" value="{{name}}" /> 
-			    <button type="submit" name="accept_tag" value="true" class="link-button">
-			    Save Item
-			    </button>
-            </form>
-            <form method="post" action="get_deferred_report" class="inline" target="report_frame">
-                    <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button">View Item</button>
-            </form>
+                {% if item_dict.status=='CTH_DEFER_READY' %}
+                    <form method="post" action="update_tag" class="inline" target="report_frame">
+                        <input type="hidden" name="name" value="{{name}}" /> 
+                        <button type="submit" name="accept_tag" value="true" class="link-button">
+                        Save Item
+                        </button>
+                    </form>
+                    <form method="post" action="get_deferred_report" class="inline" target="report_frame">
+                            <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button">View Item</button>
+                    </form>
+                
+                {% endif %}
+			
             </td>
             
 				

@@ -120,7 +120,8 @@ def logout():
 def run_reports():
     if not session.get('user_name'):
         return redirect(url_for('index'))
-    return render_template('run_reports.html')
+    return render_template('run_reports.html', test_url = "http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/Report1.fex"
+    )
 
 
 # TODO: Test CORS policy for reports using css/js from ibi_apps via /client_app_redirect
@@ -178,14 +179,23 @@ def run_report():
 
 # Used to receive webfocus report local files (js/css) from proper source
 # Currently always sends response header as {'Content-Type': 'text/html'} even for .js/.css files
-# TODO: Remove hardcoded URL
+# TODO: Look into a better way to do this
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
     #headers = request.headers
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
-    response = wf_sess.get(base_url+page)
-    return response.content
+    response = wf_sess.get(base_url+page, stream=True)
+
+    # Note: Python requests automatically decodes gzip response so set stream=True for raw bytes
+    # My knowledge of compression/encoding is limited so need to verify correct method for this;
+    # Should I be returning this gzip compressed response as it currently is coded
+    # or should I return the decoded response.content with 'Content-Encoding' header removed?
+    # Should any other response headers be changed/removed?
+    
+    # print(response.headers)   
+    # return response.content, response.status_code, response.headers.items()
+    return response.raw.read(), response.status_code, response.headers.items()
 
 
 @app.route('/schedules')
@@ -194,8 +204,8 @@ def schedules():
         return redirect(url_for('index'))
     return render_template('schedules.html')
 
-@app.route('/schedule_item', methods=['POST'])
-def schedule_item():
+@app.route('/run_schedule', methods=['POST'])
+def run_schedule():
     schedule_name = request.form.get('schedule_name')
     if not schedule_name:
         schedule_name = "TestSchedule"
@@ -214,6 +224,13 @@ def schedule_item():
     # print(response)
     # print(response.content)
     return response.content
+
+
+@app.route('/schedule_report', methods=['POST'])
+def schedule_report():
+
+    return "WIP", "404"
+
 
 @app.route('/defer_reports')
 def defer_reports():
@@ -239,8 +256,9 @@ def defer_report():
 
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+    base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 
-    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs',
+    response = wf_sess.post(base_url,
                             data = payload )
     print(response)
     # print(response.content)
@@ -301,13 +319,17 @@ def deferred_reports_table():
     if "user_name" not in session:
         return redirect('/')
     wf_sess = wf_login()
+
     # retrieve list of deferred tickets
     payload = {"IBIRS_action":"listTickets"}
     payload['IBIRS_service'] = 'defer'
     payload['IBIRS_filters'] = payload['IBIRS_args'] = '__null'
-    payload['IBIWF_SES_AUTH_TOKEN']=wf_sess.IBIWF_SES_AUTH_TOKEN
+    payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
     response = wf_sess.get(ibi_rest_url, params=payload) # will be xml
+
+
     # convert xml response to minimal dict for easy access
+    # TODO: perform xml parsing in new function?
     # breakpoint()
     tree = ET.fromstring(response.text)
     root = tree.find('rootObject')
@@ -352,4 +374,5 @@ if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=True)
     # secret key randomly generated via commandline:
     # python -c 'import os; print(os.urandom(16))'
+    # TODO: Remove bad security leak; should import from config file or env variable
     app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'

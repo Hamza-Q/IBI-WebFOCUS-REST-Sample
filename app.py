@@ -1,12 +1,14 @@
 """
 WebFOCUS embedded in a Python Web Application
 MVP highlighting most important WebFOCUS REST calls
+TODO: Structure app into a proper directory format
 Created by Hamza Qureshi
 Hamza_Qureshi@ic.ibi.com
 """
 
+
 # Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect, flash
+from flask import Flask, render_template, request, session, url_for, redirect, flash, g
 import requests
 # wfrs is an API wrapper for WebFOCUS REST calls, currently in development
 import wfrs
@@ -20,7 +22,7 @@ import datetime
 
 # Initialize app
 app = Flask(__name__)
-app.secret_key = "IBI"
+# Put these in config file or env vars?
 ibi_client_protocol = "http"
 ibi_client_host = "localhost"
 ibi_client_port = "8080"
@@ -30,18 +32,23 @@ ibi_rest_url =  ibi_client_protocol + '://' +  \
                 'ibi_apps/rs'
 
 # creates and returns a signed in webfocus session object
-# TODO: Add proper security
+# TODO: Add proper security, maybe add current user to a list in WF
 def wf_login():
-    wf_sess = wfrs.Session()
-    wf_sess.mr_sign_on(
-        protocol = ibi_client_protocol, 
-        host = ibi_client_host, 
-        port = ibi_client_port
-    )
-    return wf_sess
+    # g is the application context; objects in g are created and destroyed 
+    # with the same lifetime as the current request to the server
+
+    # Create a WF Session if one does not already exist
+    if 'wf_sess' not in g:
+        g.wf_sess = wfrs.Session()
+        g.wf_sess.mr_sign_on(
+            protocol = ibi_client_protocol, 
+            host = ibi_client_host, 
+            port = ibi_client_port
+        )
+    return g.wf_sess
 
 
-# dummy login page
+# (dummy) login page
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if session.get('user_name'):
@@ -66,13 +73,14 @@ def login_auth():
         # creates a session for the the user
         session['user_name'] = user_name
 
+        # Not making any WF requests for now so no need to sign in
         """
         # driver
         session['wf_sess'] = True
         # sign on url
         url = 'http://localhost:8080/ibi_apps/rs/ibfs'
         # TODO: make sign on + csrf token retrieval use the proper auth channels
-        # TODO: store request session variables into Flask session object 
+        # Potential TODO: store request session variables into Flask session object 
         payload = {
             'IBIRS_action':'signOn',
             'IBIRS_userName':'admin',
@@ -370,9 +378,74 @@ def deferred_reports_table():
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets)
 
 
+# IN DEVELOPMENT
+def create_schedule_xml(desc = 'test', notif_email = '', 
+                        from_address = 'hamza_qureshi@ic.ibi.com', 
+                        distrib_type='email'):
+
+    root = ET.Element('rootObject')
+    root.attrib['_jt'] = 'IBFSCasterObject'
+    root.attrib['description'] = desc
+    root.attrib['type'] = 'CasterSchedule'
+
+    caster = ET.SubElement(root, 'casterObject')
+    caster.attrib['_jt'] = 'CasterSchedule'
+    caster.attrib['active'] = 'Active'
+    caster.attrib['deleteJobAfterRun'] = 'DeleteJobAfterRun'
+    caster.attrib['description'] = desc
+    caster.attrib['owner'] = 'admin' # probably should use session['user_name']  
+    caster.attrib['priority'] = '1'
+    caster.attrib['traceType'] = '0'
+
+    notifs = ET.SubElement(caster, 'notification')
+    notifs.attrib['_jt'] = 'CasterScheduleNotification'
+    notifs.attrib['addressForBriefNotification'] = ''
+    notifs.attrib['addressForFullNotification'] = notif_email
+    notifs.attrib['description'] = ''
+    notifs.attrib['from'] = from_address
+    notifs.attrib['subject'] = desc
+    notifs.attrib['type'] = 'ALWAYS'
+
+    distrib = ET.SubElement(caster, 'distributionList')
+    distrib.attrib['_jt'] = 'array'
+
+    # use a factory to get type and return xml object accordingly
+    if distrib_type == 'email':
+        distrib.attrib['itemsClass'] = 'CasterScheduleDistribution'
+        distrib.attrib['size'] = '1'
+
+        item = ET.SubElement(distrib, 'item')
+        item.attrib['_jt'] = 'CasterScheduleDistributionEmail'
+        item.attrib['authEnabled'] = 'AuthEnabled' # look into details of this
+        item.attrib['authPassword'] = item.attrib['authUserid'] = 'admin' # 
+        item.attrib['description'] = 'Email' #
+        item.attrib['enabled'] = 'true'
+        item.attrib['index'] = '0'
+        item.attrib['inLineMessage'] = 'test' # change to input variable
+        item.attrib['inLineTaskIndex'] = ''
+        item.attrib['mailFrom'] = from_address
+        item.attrib['mailReplyAddress'] = ''
+        item.attrib['mailServerName'] = 'devmail.ibi.com' # find a way to get this information properly
+        item.attrib['mailSubject'] = 'Scheduled Report'
+        item.attrib['sendingReportAsAttachment'] = 'true'
+        # Where is this information available? Shouldn't have to manually config here
+        item.attrib['sslEnabled'] = 'false' 
+        item.attrib['tlsEnabled'] = 'false'
+        item.attrib['zipFileName'] = '' # shouldn't be used but is it still needed in object?
+        item.attrib['zipResult'] = 'false'
+        
+    x = wfrs.Session().pretty_print_xml(ET.tostring(root))
+    print(x)
+
+    # print(ET.dump(root))
+
+    return root
+
+
 if __name__ == '__main__':
+    # create_schedule_xml()
     app.run(host='localhost', port=5000, debug=True)
     # secret key randomly generated via commandline:
     # python -c 'import os; print(os.urandom(16))'
-    # TODO: Remove bad security leak; should import from config file or env variable
+    # TODO: Add security; should import from config file or env variable
     app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'

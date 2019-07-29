@@ -658,7 +658,7 @@ class Session(requests.Session):
         data = {
             'IBIRS_action': 'copy',
             'IBIRS_destination': '/WFC/Repository/{}/{}'.format(
-                                 foldername_destination),
+                                 foldername_source, foldername_destination),
             'IBIRS_replace': replace
         }
         url = '{}://{}:{}/ibi_apps/rs/ibfs/WFC/Repository/{}/{}'.format(

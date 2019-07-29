@@ -48,6 +48,14 @@ def wf_login():
     return g.wf_sess
 
 
+# signs out of WF after request if it exists (closes connection)
+@app.teardown_appcontext
+def teardown_wf_sess(e=None):
+    wf_sess = g.pop('wf_sess', None)
+    if wf_sess is not None:
+        wf_sess.mr_signoff()
+
+
 # (dummy) login page
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -444,8 +452,8 @@ def create_schedule_xml(desc = 'test', notif_email = '',
 
 if __name__ == '__main__':
     # create_schedule_xml()
-    app.run(host='localhost', port=5000, debug=True)
     # secret key randomly generated via commandline:
     # python -c 'import os; print(os.urandom(16))'
     # TODO: Add security; should import from config file or env variable
     app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'
+    app.run(host='localhost', port=5000, debug=True)

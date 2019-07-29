@@ -10,34 +10,35 @@
     <br>
     
 </head>
-<body>
-    <div style="display:inline-block; width:40%; align-self:flex-start;">
-        <h3>Run an existing schedule:</h3>
-        <form action="/run_schedule" target="return_frame" method="post">
-            Schedule Name: <input type="text" name = "schedule_name" id="schedule_name" placeholder= "Default: TestSchedule"/>.sch
-            <input type="submit" value = "Submit" />
-        </form>
-            <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
-        <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
-        <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
-        <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
-        <iframe name="return_frame" style="position: absolute"></iframe>
-    </div>
+    <body>
+        <div style="display:inline-block; width:40%; align-content: flex-start;">
+            <h3>Run an existing schedule:</h3>
+            <form action="/run_schedule" target="return_frame" method="post">
+                Schedule Name: <input type="text" name = "schedule_name" id="schedule_name" placeholder= "Default: TestSchedule"/>.sch
+                <input type="submit" value = "Submit" />
+            </form>
+                <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
+            <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
+            <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
+            <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
+            <iframe name="return_frame" style="position: absolute;"></iframe>
+        </div>
+        <br><br><br><br><br><br><br><br><br><br>
+        <div style="display:inline-block; align-self:flex-end;">
+            <h3>Run a report at a set time via ReportCaster Schedule (Create a new schedule)</h3>
+            <form action="/schedule_item" target="return_frame" method="post">
+                Report Name: <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/>.fex
+                
+                
 
-    <div style="display:inline-block; align-self:auto;">
-        <h3>Run a scheduled report (Create a new schedule)</h3>
-        <form action="/schedule_item" target="return_frame" method="post">
-            Report Name: <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/>.fex
-            
-            
-
-            <input type="submit" value = "Submit" />
-        </form>
-            <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
-        <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
-        <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
-        <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
-        <iframe name="return_frame" style="position: absolute"></iframe>
-    </div>
+                <input type="submit" value = "Submit" />
+            </form>
+                <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
+            <p>Note: Schedule Job Number and details will show up in the frame below and may take some time to load;
+                please wait a moment after clicking run.</p>
+            <p>Schedules will be created in the Public Repository and are case sensitive.</p>
+            <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
+            <iframe name="return_frame" style="position: absolute"></iframe>
+        </div>
 </body>
 </html>

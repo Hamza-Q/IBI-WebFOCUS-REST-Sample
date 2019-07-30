@@ -1,0 +1,18 @@
+<head>
+    ><a href='/schedules'>Back to schedules</a> <br>
+    ><a href='/home'>Go Home</a>
+    <br>
+</head>
+<body>
+    <h3>Schedule Information:</h3>
+        <table>
+            {% for key,value in schedule.items() %}
+                <tr>
+                    <td>{{key}}</td>    <td>{{value}} </td>
+                </tr>
+            {% endfor %}
+        </table>        
+    <h3>Logs:</h3>
+    
+
+</body>

@@ -26,16 +26,16 @@ app = Flask(__name__)
 ibi_client_protocol = "http"
 ibi_client_host = "localhost"
 ibi_client_port = "8080"
-ibi_rest_url =  ibi_client_protocol + '://' +  \
-                ibi_client_host + ':' +     \
-                ibi_client_port + '/' +     \
-                'ibi_apps/rs'
+ibi_rest_url =  \
+    f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 
 # creates and returns a signed in webfocus session object
 # TODO: Add proper security, maybe add current user to a list in WF
 def wf_login():
     # g is the application context; objects in g are created and destroyed 
     # with the same lifetime as the current request to the server
+    # By creating the WF Session within g, we can use one connection per request
+    # and sign out at the end, rather than sign in/out for every action
 
     # Create a WF Session if one does not already exist
     if 'wf_sess' not in g:
@@ -56,7 +56,7 @@ def teardown_wf_sess(e=None):
         wf_sess.mr_signoff()
 
 
-# (dummy) login page
+# login page
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if session.get('user_name'):
@@ -65,7 +65,7 @@ def index():
 
 
 # Authenticates the login
-# Just a driver function for now - accepts any user_name and password
+# Driver function - accepts any user_name and password
 @app.route('/login_auth', methods=['GET', 'POST'])
 def login_auth():
     if session.get('user_name'):
@@ -77,37 +77,20 @@ def login_auth():
     user_name = request.form['user_name']
     # password = request.form['password']
 
+    # authenticate user and password here
+
+    # if acceptable credentials:
     if user_name:
         # creates a session for the the user
         session['user_name'] = user_name
 
         # Not making any WF requests for now so no need to sign in
         """
-        # driver
-        session['wf_sess'] = True
-        # sign on url
-        url = 'http://localhost:8080/ibi_apps/rs/ibfs'
         # TODO: make sign on + csrf token retrieval use the proper auth channels
         # Potential TODO: store request session variables into Flask session object 
-        payload = {
-            'IBIRS_action':'signOn',
-            'IBIRS_userName':'admin',
-            'IBIRS_password':'admin'
-        }
-        wf_session = requests.Session()
-        wf_session.post(url, payload)
         
         # Save IBI_CSRF_Token_Value from response to sign-on request.
 
-        tree = ET.fromstring(response.content)
-        token = tree.find('properties/entry[@key="IBI_CSRF_Token_Value"]')
-        token_value = token.attrib['value']
-        # save CSRF token to user session
-        session['IBIWF_SES_AUTH_TOKEN'] = token_value
-
-        print(response.text)
-        breakpoint()
-        wf_sess_id = False # parse headers
         session['WF-JSessionID'] = wf_sess_id
         """
 
@@ -121,7 +104,7 @@ def login_auth():
 @app.route('/home')
 def home():
     if not session.get('user_name'):
-        #  error="You must be logged in to view this page"
+        #  error = "You must be logged in to view this page"
         return redirect(url_for('index'))
     return render_template('home.html')
 
@@ -244,8 +227,93 @@ def run_schedule():
 
 @app.route('/schedule_report', methods=['POST'])
 def schedule_report():
-
     return "WIP", "404"
+
+
+# IN DEVELOPMENT
+@app.route('/view_schedule_log', methods=['GET'])
+def view_schedule_log():
+    schedule_name = request.args.get('schedule_name')
+
+    if not schedule_name:
+        schedule_name = "TestSchedule"
+    wf_sess = wf_login()
+
+    # Get schedule xml object    
+    params = { 
+        'IBIRS_action':'get',
+    }
+    
+    payload=dict()
+
+    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
+        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+
+
+    response = wf_sess.get(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}.sch',
+                            params=params, data=payload )
+
+    # Parse xml for schedule id
+    if response.status_code!=200:
+        print("error status code != 200")
+        return "Error: Could not retrieve schedule."
+    root = ET.fromstring(response.content)
+    if root.attrib['returncode'] != "10000":
+        print("error retcode != 10k")
+        return "Error: Could not retrieve schedule."
+    for child in root:
+        if child.tag == 'rootObject':
+            rootObject = child
+    schedule_id = rootObject.attrib['handle'] # handle = external id?
+
+    # Parse xml for more schedule information
+    for child in rootObject:
+        if child.tag == 'casterObject':
+            casterObject = child
+    lastTimeExecuted = unixtime_ms_to_datetime(int(casterObject.attrib['lastTimeExecuted']))
+
+    schedule = {
+        'name': schedule_name,
+        'owner':    casterObject.attrib['owner'],
+        'id':   schedule_id,
+        'description':  casterObject.attrib['description'],
+        'summary':      casterObject.attrib['summary'],
+        'sendMethod':   casterObject.attrib['sendMethod'],
+        'destinationAddress':   casterObject.attrib['destinationAddress'],
+        'lastTimeExecuted':     lastTimeExecuted,
+        'statusLastExecuted':   casterObject.attrib['statusLastExecuted'],
+        'nextRunTime':  casterObject.attrib['nextRunTime'],
+        'procedures':   []
+    }
+    # Parse xml for procedure information
+
+    for child in casterObject:
+        if child.tag =='taskList':
+            taskList = child
+
+    # taskList can have multiple items
+    for item in taskList:
+        procedureName = item.attrib['procedureName']
+        schedule['procedures'].append(procedureName)
+
+    # Have schedule id, now use it to retrieve log list 
+    url =   f"{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}" + \
+            "/ibi_apps/services/LogServiceREST/getLogInfoListByScheduleId"
+    
+    params = dict()
+    params['scheduleId'] = schedule_id
+
+    # re=use payload with csrf token from before
+    response = wf_sess.get(url, params=params, data=payload) 
+
+
+
+    # x = wfrs.Session().pretty_print_xml(response.text)
+    # print(x)
+    # breakpoint()
+
+    return render_template('schedule_log_info.html', schedule=schedule)
+
 
 
 @app.route('/defer_reports')
@@ -255,6 +323,8 @@ def defer_reports():
         return redirect(url_for('index'))
     return render_template('defer_reports.html')
 
+
+# Run report deferred and store id info in session
 @app.route('/defer_report', methods=['POST'])
 def defer_report():
     report_name = request.form.get('report_name')
@@ -306,7 +376,7 @@ def defer_report():
 @app.route('/get_deferred_report', methods=['GET', 'POST'])
 def get_deferred_report():
     ticket_name = request.form.get('ticket_name')
-    print(ticket_name)
+    # print(ticket_name)
     if not ticket_name:
         return "Error: No ticket selected"
     
@@ -386,7 +456,7 @@ def deferred_reports_table():
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets)
 
 
-# IN DEVELOPMENT
+# IN DEVELOPMENT - will potentially abandon feature
 def create_schedule_xml(desc = 'test', notif_email = '', 
                         from_address = 'hamza_qureshi@ic.ibi.com', 
                         distrib_type='email'):
@@ -449,6 +519,11 @@ def create_schedule_xml(desc = 'test', notif_email = '',
 
     return root
 
+def unixtime_ms_to_datetime(unixtime_ms):
+    unixtime = unixtime_ms/1000
+    datetime_created = datetime.datetime.fromtimestamp(unixtime)
+    datetime_string = datetime_created.strftime("%Y-%m-%d %H:%M:%S")
+    return datetime_string
 
 if __name__ == '__main__':
     # create_schedule_xml()

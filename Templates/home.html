@@ -3,20 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
-    <h1>Home</h1>
-    <h2>Company X</h2>
+    <br>
+    <br>
+    <br>
+    <h1>Company X</h1>
+    <br>
+    <h2>Home</h2>
+
+
+    <style>
+        body{
+background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;
+background-size: cover;
+}
+h1{
+font-size: 100px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+text-align: center;
+}
+h2{
+font-size: 80px;
+font-family: "Times New Roman", Times, serif;
+font-weight: normal;
+color: #0D3093;
+line-height: 0.7;
+text-align: center;
+}
+a:link, a:visited {
+  background-color: #0D3093;
+  color: white;
+  font-size: 30px;
+  padding: 14px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+a:hover, a:active {
+  background-color: LightBlue;
+}
+ul {
+  position: fixed;
+  top: 0%;
+  width: 100%;
+  list-style-type: none;
+  margin: 0;
+  padding: 30;
+  overflow: hidden;
+  background-color: #0D3093;
+}
+li {
+  float: left;
+}
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+li a:hover:not(.active) {
+  background-color: LightBlue;
+}
+a.active {
+  background-color: LightBlue;
+}
+    </style>
+
 </head>
 <body>
-<h3>Actions:</h3>
-<br>
-<a href="/run_reports">Run Reports</a>
-<br>
-<a href="/schedules">Schedules</a>
-<br>
-<a href="/defer_reports">Defer Reports</a>
-<br>
-<a href="deferred_reports_table">View all Deferred Reports</a>
-<br>
+
+<ul>
+  <li><a class="active" href="/home" id="home">Home</a></li>
+  <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
+  <li><a href="/schedules" id="schedules" >Schedules</a></li>
+  <li><a href="/defer_reports" id="defer_reports">Defer Reports</a></li>
+    <li><a href="deferred_reports_table" id="deferred_reports_table">View Deferred Reports</a></li>
+    <li><a href="/logout" id="logout">Logout</a></li>
+</ul>
+
+
+
+
 </body>
-<a href="/logout">Logout</a>
+
 </html>

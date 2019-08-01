@@ -3,35 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <title>Defer Reports</title>
+    <br>
+    <br>
     <h1>Company X</h1>
-    <br>
-    <a href='/home' >Go Home</a>
-    <h3>Run a Deferred Report</h3>
-    <h4>Process:</h4>
+
+   <!-- <a href='/home' >Go Home</a> -->
+    <h2>Run a Deferred Report</h2>
+    <h3>Process:</h3>
     <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.
-        
+
     </p>
-    
+
 
 
     <br>
+        <style>
+body{
+background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;
+background-size: cover;
+}
+h1{
+font-size: 50px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+}
+h2{
+font-size: 30px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.8;
+}
+h3{
+font-size: 25px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+}
+p{
+font-size: 20px;
+font-family: "Times New Roman", Times, serif;
+font-weight: normal;
+color: #0D3093;
+line-height: 0.7;
+}
+ul {
+  position: fixed;
+  top: 0%;
+  width: 100%;
+  list-style-type: none;
+  margin: 0;
+  padding: 30;
+  overflow: hidden;
+  background-color: #0D3093;
+}
+li {
+  float: left;
+}
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+li a:hover:not(.active) {
+  background-color: LightBlue;
+}
+a.active {
+  background-color: LightBlue;
+}
+#button {
+background-color: #0D3093;
+border: none;
+color: white;
+padding: 12px 24px;
+text-decoration: none;
+margin: 4px 2px;
+cursor: pointer;
+font-size: 20px;
+font-family: "Times New Roman", Times, serif;
+}
+#report_name{
+border: 2px solid #0D3093;
+  border-radius: 4px;
+  height: 50px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  font-size: 20px;
+  font-family: "Times New Roman", Times, serif;
+  resize: none;
+  color: #0D3093;
+}
+#IBIRS_tDesc{
+border: 2px solid #0D3093;
+  border-radius: 4px;
+  height: 50px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  font-size: 20px;
+  font-family: "Times New Roman", Times, serif;
+  resize: none;
+  color: #0D3093;
+}
+ </style>
     
 </head>
 <body>
     <form action="/defer_report" method="post">
-        Report Name: 
-        <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/>.fex
+        <p>  Report Name: <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/> .fex</p>
         <br>
-        Ticket Description:
-        <input type="text" name = "IBIRS_tDesc" id="IBIRS_tDesc" placeholder = "Enter ticket description (required)" required/>
+
+        <p>Ticket Description:<input type="text" name = "IBIRS_tDesc" id="IBIRS_tDesc" placeholder = "Enter ticket description (required)" required/></p>
         <br>
-        <input type="submit" value = "Submit" />
+        <input type="submit" value = "Submit" id="button"/>
     </form>
     <br>
 
     <h3>View a Deferred Report</h3>
     <br>
-    <a href="/deferred_reports_table">View Table of all deferred reports</a>
+    <a href="/deferred_reports_table" id="button">View Table of all deferred reports</a>
     
     {% if session.get('deferred_items') %}
 
@@ -42,14 +137,25 @@
                     <option value="{{ticket_name}}">Report Name: {{report_name}} ; Ticket Name: {{ticket_name}}</option>
                 {% endfor %}
             </select>
-            <input type="submit" value = "Get Selected Report"/>
+            <input type="submit" value = "Get Selected Report" id="button"/>
         </form>
     {% else %}
             <p>No reports deferred from this session</p>
     {% endif %}
 
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
+    
     <iframe name="report_frame" style="position: absolute; height: 70%; width: 80% ">Report Appears Here</iframe>
+    
+
+<ul>
+  <li><a href="/home" id="home">Home</a></li>
+  <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
+  <li><a href="/schedules" id="schedules" >Schedules</a></li>
+  <li><a class="active" href="/defer_reports" id="defer_reports">Defer Reports</a></li>
+    <li><a href="deferred_reports_table" id="deferred_reports_table">View Deferred Reports</a></li>
+    <li><a href="/logout" id="logout">Logout</a></li>
+</ul>
 
 
 </body>

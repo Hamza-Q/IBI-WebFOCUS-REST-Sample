@@ -3,26 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <title>Run an existing ReportCaster Schedule</title>
-    <h1>Company X</h1>
-    <a href='/home' >Go Home</a>
-
-
     <br>
+    <h1>Company X</h1>
+
+
+             <style>
+body{
+background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;
+background-size: cover;
+}
+h1{
+font-size: 50px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+}
+h2{
+font-size: 30px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.8;
+}
+h3{
+font-size: 25px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+}
+p{
+font-size: 20px;
+font-family: "Times New Roman", Times, serif;
+font-weight: normal;
+color: #0D3093;
+line-height: 0.7;
+}
+ul {
+  position: fixed;
+  top: 0%;
+  width: 100%;
+  list-style-type: none;
+  margin: 0;
+  padding: 30;
+  overflow: hidden;
+  background-color: #0D3093;
+}
+li {
+  float: left;
+}
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+li a:hover:not(.active) {
+  background-color: LightBlue;
+}
+a.active {
+  background-color: LightBlue;
+}
+#button {
+background-color: #0D3093;
+border: none;
+color: white;
+padding: 12px 24px;
+text-decoration: none;
+margin: 4px 2px;
+cursor: pointer;
+font-size: 20px;
+font-family: "Times New Roman", Times, serif;
+}
+#schedule_name{
+border: 2px solid #0D3093;
+  border-radius: 4px;
+  height: 50px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  font-size: 20px;
+  font-family: "Times New Roman", Times, serif;
+  resize: none;
+  color: #0D3093;
+}
+</style>
+
     
 </head>
     <body>
         <div style="display:inline-block; width:40%; align-content: flex-start;">
-            <h3>Enter a schedule name:</h3>
+            <h3>Run or View Details for an existing schedule:</h3>
             <form>
                 Schedule Name: <input type="text" name = "schedule_name" id="schedule_name" placeholder= "Default: TestSchedule"/>.sch
                 <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST" formtarget="return_frame"/>
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET">
             </form>
                 <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
-            <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
+            <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; 
+                please wait a moment after clicking run.</p>
             <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
             <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
             <iframe name="return_frame" style="position: absolute;"></iframe>
         </div>
+
+    <ul>
+  <li><a href="/home" id="home">Home</a></li>
+  <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
+  <li><a href="/schedules" id="schedules" >Schedules</a></li>
+  <li><a class="active" href="/defer_reports" id="defer_reports">Defer Reports</a></li>
+    <li><a href="deferred_reports_table" id="deferred_reports_table">View Deferred Reports</a></li>
+    <li><a href="/logout" id="logout">Logout</a></li>
+</ul>
 </body>
 </html>

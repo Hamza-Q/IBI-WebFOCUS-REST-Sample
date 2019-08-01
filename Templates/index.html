@@ -3,20 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <h1>Welcome to Company</h1>
-    <h2>Login</h2>
+    <h1>Welcome to Company X</h1>
+	<br>
+	<br>
+	<br>
+    <!--<h2>Login</h2>-->
+
+	    <style>
+body{
+background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;
+background-size: cover;
+}
+h1{
+font-size: 100px;
+font-family: "Times New Roman", Times, serif;
+font-weight: bold;
+color: #0D3093;
+line-height: 0.7;
+text-align: center;
+}
+#login {
+text-align: center;
+}
+#user {
+ border: 2px solid #0D3093;
+  border-radius: 4px;
+  height: 75px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  font-size: 25px;
+  font-family: "Times New Roman", Times, serif;
+  resize: none;
+  color: #0D3093;
+}
+#button {
+background-color: #0D3093;
+border: none;
+color: white;
+padding: 16px 32px;
+text-decoration: none;
+margin: 4px 2px;
+cursor: pointer;
+font-size: 25px;
+font-family: "Times New Roman", Times, serif;
+}
+    </style>
 </head>
 <body>
+<div >
+<form action="/login_auth" method="POST" id="login">
+	<input type="text" name = "user_name" placeholder="Username" required id="user"/> </br>
+	<input type="password" name = "password" placeholder="Password" required id="user"/> </br>
 
-<form action="/login_auth" method="POST">
-	<input type="text" name = "user_name" placeholder="user_id" required/> </br>
-	<input type="password" name = "password" placeholder="password" required/> </br>
-
-	<input type="submit" value = Login />
+	<input type="submit" value = Login id ="button"/>
 	{% if error %}
 		<p class="error"><strong>Error:</strong> {{error}}</p>
 	{% endif %}
 </form>
+</div>
 
 </body>
 </html>

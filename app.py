@@ -128,7 +128,7 @@ def run_reports():
 #@flask_cors.cross_origin(origins='localhost', headers=['Content-Type', 'Authorization'])
 def run_report():
     report_name = request.form.get('report_name')
-    print(report_name)
+    # print(report_name)
     if not report_name:
         report_name = "Report1"
     wf_sess = wf_login()
@@ -172,7 +172,7 @@ def run_report():
     # print(response.headers)
     # breakpoint()
     # breakpoint()
-    print(response)
+    # print(response)
     # print(response.content)
     return response.content
 
@@ -271,7 +271,9 @@ def view_schedule_log():
         if child.tag == 'casterObject':
             casterObject = child
     lastTimeExecuted = unixtime_ms_to_datetime(int(casterObject.attrib['lastTimeExecuted']))
-
+    nextRunTime = casterObject.attrib['nextRunTime']
+    if not nextRunTime:
+        nextRunTime = "None Scheduled"
     schedule = {
         'name': schedule_name,
         'owner':    casterObject.attrib['owner'],
@@ -282,7 +284,7 @@ def view_schedule_log():
         'destinationAddress':   casterObject.attrib['destinationAddress'],
         'lastTimeExecuted':     lastTimeExecuted,
         'statusLastExecuted':   casterObject.attrib['statusLastExecuted'],
-        'nextRunTime':  casterObject.attrib['nextRunTime'],
+        'nextRunTime':  nextRunTime,
         'procedures':   []
     }
     # Parse xml for procedure information
@@ -305,20 +307,71 @@ def view_schedule_log():
 
     # re=use payload with csrf token from before
     response = wf_sess.get(url, params=params, data=payload) 
+    if response.status_code != 200:
+        print("Error: Could not receive log data")
+        return "error"
 
+    # log xml response is very messy and unintuitive
 
+    log_root = ET.fromstring(response.content)
 
-    # x = wfrs.Session().pretty_print_xml(response.text)
-    # print(x)
+    # log_data is a list of log_item attribute dictionaries
+    log_data = list()
+
+    # tags are of the form "{url}tag" in the xml; parse out the actual tag
+    format_tag = lambda x:x.split('}')[1]
+
+    # timestamps are of the form "yyyy-mm-ddThh:mm:ss.xxx-xx:xx; 
+    # omit anything after seconds; split will return tuple as (date_string, time_string)
+    # so join these as a string separated by a space
+    def format_time(time_string):
+        date_str, time_str = time_string.split('T')
+        time_str = time_str[:8] # first 8 digits are hh:mm:ss
+        return f"{date_str} {time_str}"
+
+    # errorType will be a string of either "0" or "1" if no error or error, respectively
+    format_error = lambda x:"Error" if int(x) else "No Error"
+
+    # relevant xml data for table column headers as keys.
+    # text formattor function as value
+    log_formatter = {
+        'startTime': format_time,
+        'endTime': format_time, 
+        'errorType': format_error, 
+        'owner': None, 
+    }
+
+    for log_item in log_root:
+        # log item exists for each time schedule was run
+
+        # attributes is a dictionary of each log item's data
+        attributes = dict()
+
+        for attribute in log_item:  # attributes are children of the log items in xml tree
+            if attribute.text:      # only care for attributes with text
+                key = format_tag(attribute.tag)
+                if key in log_formatter:
+                    # function from log_formatter that will format the xml text
+                    format_func = log_formatter[key] 
+                    # if key is 'owner', nothing to format
+                    attributes[key] = format_func(attribute.text) if format_func else attribute.text
+                    print(key, attributes[key])
+        log_data.append(attributes)
+
+    with open("_f.xml", 'w') as f:
+        print(response.text, file=f)
+
+    # sort data by start time, most recent to least recent
+    log_data.sort(key = lambda x:x['startTime'], reverse=True)
     # breakpoint()
 
-    return render_template('schedule_log_info.html', schedule=schedule)
+    return render_template('schedule_log_info.html', schedule=schedule, log_data=log_data)
 
 
 
 @app.route('/defer_reports')
 def defer_reports():
-    print(session.get('deferred_items'))
+    # print(session.get('deferred_items'))
     if not session.get('user_name'):
         return redirect(url_for('index'))
     return render_template('defer_reports.html')
@@ -346,7 +399,7 @@ def defer_report():
 
     response = wf_sess.post(base_url,
                             data = payload )
-    print(response)
+    # print(response)
     # print(response.content)
 
     # WIP:  Parse XML for ticket id, store in session['deferred_items'] dict 
@@ -362,14 +415,14 @@ def defer_report():
         if child.tag == 'rootObject':
             rootObject = child
     ticket_name = rootObject.attrib['name']
-    print(ticket_name)
+    # print(ticket_name)
 
     if 'deferred_items' not in session:
         session['deferred_items'] = {}
     session['deferred_items'][ticket_name] = report_name
     session.modified=True 
     # breakpoint()
-    print(session)
+    # print(session)
     return redirect(url_for('defer_reports'))
 
 # Retrieves deferred report data
@@ -531,4 +584,4 @@ if __name__ == '__main__':
     # python -c 'import os; print(os.urandom(16))'
     # TODO: Add security; should import from config file or env variable
     app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

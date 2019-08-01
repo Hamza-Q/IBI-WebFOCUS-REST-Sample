@@ -90,9 +90,12 @@ border: 2px solid #0D3093;
 </head>
 <body>
     <form action="/run_report" id="run_report "target="report_frame" method="post">
-        <p>Report Name: <input type="text" name = "report_name" id="report_name" 
-            placeholder= "Default: Report1"/> .fex <input type="submit" value = "Submit" id="button"/></p>
-
+        Report Name:  
+        <select name = "report_name" id="report_name">
+            {% for rep_name in reports %}
+            <option value="{{rep_name}}">{{rep_name}}</option>
+            {% endfor %}
+        <input type="submit" value = "Submit" id="button"/>
     </form>
  <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>

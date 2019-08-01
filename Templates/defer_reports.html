@@ -115,9 +115,12 @@ border: 2px solid #0D3093;
 </head>
 <body>
     <form action="/defer_report" method="post">
-        <p>  Report Name: <input type="text" name = "report_name" id="report_name" placeholder= "Default: Report1"/> .fex</p>
+        Report Name: 
+            <select name = "report_name" id="report_name">
+                {% for rep_name in reports %}
+                <option value="{{rep_name}}">{{rep_name}}</option>
+                {% endfor %}
         <br>
-
         <p>Ticket Description:<input type="text" name = "IBIRS_tDesc" id="IBIRS_tDesc" placeholder = "Enter ticket description (required)" required/></p>
         <br>
         <input type="submit" value = "Submit" id="button"/>

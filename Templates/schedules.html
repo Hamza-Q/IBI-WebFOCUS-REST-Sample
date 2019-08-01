@@ -97,7 +97,11 @@ border: 2px solid #0D3093;
         <div style="display:inline-block; width:40%; align-content: flex-start;">
             <h3>Run or View Details for an existing schedule:</h3>
             <form>
-                Schedule Name: <input type="text" name = "schedule_name" id="schedule_name" placeholder= "Default: TestSchedule"/>.sch
+                Schedule Name: 
+                <select name = "schedule_name" id="schedule_name">
+                  {% for sched_name in schedules %}
+                  <option value="{{sched_name}}">{{sched_name}}</option>
+                  {% endfor %}
                 <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST" formtarget="return_frame"/>
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET">
             </form>

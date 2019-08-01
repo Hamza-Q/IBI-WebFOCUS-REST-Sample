@@ -28,6 +28,7 @@ ibi_client_host = "localhost"
 ibi_client_port = "8080"
 ibi_rest_url =  \
     f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
+ibi_default_folder_path = "WFC/Repository/Public"
 
 # creates and returns a signed in webfocus session object
 # TODO: Add proper security, maybe add current user to a list in WF
@@ -47,6 +48,44 @@ def wf_login():
         )
     return g.wf_sess
 
+
+# gets xml ET object of response
+def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
+    wf_sess = wf_login()
+    
+    params = {'IBIRS_action':'list'}
+    payload = {}
+    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
+        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+
+    # TODO: Remove hardcoded path URL
+    response = wf_sess.get(
+        f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs/ibfs/{path}',
+        params = params, data = payload 
+    )
+    # print(response)
+    with open("_path.xml", "w") as f:
+        print(response.text, file=f)
+    
+    files_xml_response = ET.fromstring(response.text)
+    files_xml = files_xml_response.find('rootObject')
+    # breakpoint()
+    # if requested a certain file type
+    if file_type:
+        invalid_children = []
+        # check children and find those without proper return type
+        # Note: removing from files_xml within first for loops leads to errors;
+        # for loops does not iterate over every child
+        for child in files_xml:
+            print(child)
+            if child.get("type") != file_type:
+                print("not equals", child.get("type"))
+                invalid_children.append(child)
+        for child in invalid_children:
+            files_xml.remove(child)
+    # breakpoint()
+    return files_xml
+  
 
 # signs out of WF after request if it exists (closes connection)
 @app.teardown_appcontext
@@ -119,13 +158,18 @@ def logout():
 def run_reports():
     if not session.get('user_name'):
         return redirect(url_for('index'))
-    return render_template('run_reports.html', test_url = "http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/Report1.fex"
-    )
+
+    files_xml = list_files_in_path_xml(file_type="FexFile")
+    # reports is a list of report names
+    reports = []
+    for item in files_xml:
+        report_name = item.attrib.get("name")
+        reports.append(report_name)
+    return render_template('run_reports.html', reports=reports)
 
 
 # TODO: Test CORS policy for reports using css/js from ibi_apps via /client_app_redirect
 @app.route('/run_report', methods=['GET', 'POST'])
-#@flask_cors.cross_origin(origins='localhost', headers=['Content-Type', 'Authorization'])
 def run_report():
     report_name = request.form.get('report_name')
     # print(report_name)
@@ -163,7 +207,7 @@ def run_report():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
     # TODO: Remove hardcoded URL
-    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{report_name}.fex',
+    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{report_name}',
                             data = payload )
     # response = wf_sess.mr_run_report(folderName2, reportName, 'IBIRS_clientPath=%s' % IBIRS_clientPath)
     #breakpoint()
@@ -197,11 +241,21 @@ def client_app_redirect(page):
     return response.raw.read(), response.status_code, response.headers.items()
 
 
+# Schedules home page: get dropdown of schedules in the Public Repository
 @app.route('/schedules')
 def schedules():
     if not session.get('user_name'):
         return redirect(url_for('index'))
-    return render_template('schedules.html')
+    # folder = "WFC/Repository/Public"
+    
+    files_xml = list_files_in_path_xml(file_type="CasterSchedule")
+    # schedules is a list of schedule names
+    schedules = []
+    for item in files_xml:
+        schedule_name = item.attrib.get("name")
+        schedules.append(schedule_name)
+    
+    return render_template('schedules.html', schedules=schedules)
 
 @app.route('/run_schedule', methods=['POST'])
 def run_schedule():
@@ -218,7 +272,7 @@ def run_schedule():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
     # TODO: Remove hardcoded URL
-    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{schedule_name}.sch',
+    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{schedule_name}',
                             data = payload )
     # print(response)
     # print(response.content)
@@ -250,7 +304,7 @@ def view_schedule_log():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
 
-    response = wf_sess.get(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}.sch',
+    response = wf_sess.get(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
                             params=params, data=payload )
 
     # Parse xml for schedule id
@@ -270,20 +324,22 @@ def view_schedule_log():
     for child in rootObject:
         if child.tag == 'casterObject':
             casterObject = child
-    lastTimeExecuted = unixtime_ms_to_datetime(int(casterObject.attrib['lastTimeExecuted']))
-    nextRunTime = casterObject.attrib['nextRunTime']
+    lastTimeExecuted_unix = casterObject.attrib.get('lastTimeExecuted')
+    if lastTimeExecuted_unix:
+        lastTimeExecuted = unixtime_ms_to_datetime(int(lastTimeExecuted_unix))
+    nextRunTime = casterObject.attrib.get('nextRunTime')
     if not nextRunTime:
         nextRunTime = "None Scheduled"
     schedule = {
         'name': schedule_name,
         'owner':    casterObject.attrib['owner'],
         'id':   schedule_id,
-        'description':  casterObject.attrib['description'],
-        'summary':      casterObject.attrib['summary'],
-        'sendMethod':   casterObject.attrib['sendMethod'],
-        'destinationAddress':   casterObject.attrib['destinationAddress'],
+        'description':  casterObject.attrib.get('description'),
+        'summary':      casterObject.attrib.get('summary'),
+        'sendMethod':   casterObject.attrib.get('sendMethod'),
+        'destinationAddress':   casterObject.attrib.get('destinationAddress'),
         'lastTimeExecuted':     lastTimeExecuted,
-        'statusLastExecuted':   casterObject.attrib['statusLastExecuted'],
+        'statusLastExecuted':   casterObject.attrib.get('statusLastExecuted'),
         'nextRunTime':  nextRunTime,
         'procedures':   []
     }
@@ -329,8 +385,15 @@ def view_schedule_log():
         time_str = time_str[:8] # first 8 digits are hh:mm:ss
         return f"{date_str} {time_str}"
 
-    # errorType will be a string of either "0" or "1" if no error or error, respectively
-    format_error = lambda x:"Error" if int(x) else "No Error"
+    # errorType will be a string of a 1-digit code, mapped in this dictionary:
+    error_code_values = {
+        "0":"No Error",
+        '1':'Error',
+        '2':'Warning',
+        '6':'Running',
+        '7':'Running With Error'
+    }
+    format_error = lambda error_code:error_code_values.get(error_code)
 
     # relevant xml data for table column headers as keys.
     # text formattor function as value
@@ -355,7 +418,7 @@ def view_schedule_log():
                     format_func = log_formatter[key] 
                     # if key is 'owner', nothing to format
                     attributes[key] = format_func(attribute.text) if format_func else attribute.text
-                    print(key, attributes[key])
+                    # print(key, attributes[key])
         log_data.append(attributes)
 
     with open("_f.xml", 'w') as f:
@@ -374,7 +437,15 @@ def defer_reports():
     # print(session.get('deferred_items'))
     if not session.get('user_name'):
         return redirect(url_for('index'))
-    return render_template('defer_reports.html')
+
+    files_xml = list_files_in_path_xml(file_type="FexFile")
+    # reports is a list of report names
+    reports = []
+    for item in files_xml:
+        report_name = item.attrib.get("name")
+        reports.append(report_name)
+
+    return render_template('defer_reports.html', reports=reports)
 
 
 # Run report deferred and store id info in session
@@ -388,7 +459,7 @@ def defer_report():
     
     payload = { 'IBIRS_action':'runDeferred' }
     payload['IBIRS_tDesc'] = tDesc
-    payload['IBIRS_path'] = f"IBFS:/WFC/Repository/Public/{report_name}.fex"
+    payload['IBIRS_path'] = f"IBFS:/WFC/Repository/Public/{report_name}"
     payload['IBIRS_parameters'] = "__null"
     payload['IBIRS_args'] = "__null"
     payload['IBIRS_service'] = "ibfs"

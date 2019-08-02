@@ -73,13 +73,17 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
     # if requested a certain file type
     if file_type:
         invalid_children = []
+
+
         # check children and find those without proper return type
+
+        # TODO: refactor based on https://stackoverflow.com/questions/22817530/elementtree-element-remove-jumping-iteration
         # Note: removing from files_xml within first for loops leads to errors;
         # for loops does not iterate over every child
         for child in files_xml:
-            print(child)
+            # print(child)
             if child.get("type") != file_type:
-                print("not equals", child.get("type"))
+                # print("not equals", child.get("type"))
                 invalid_children.append(child)
         for child in invalid_children:
             files_xml.remove(child)
@@ -261,7 +265,8 @@ def schedules():
 def run_schedule():
     schedule_name = request.form.get('schedule_name')
     if not schedule_name:
-        schedule_name = "TestSchedule"
+        
+        schedule_name = "TestSchedule.sch"
     wf_sess = wf_login()
     
     payload = { 
@@ -290,7 +295,13 @@ def view_schedule_log():
     schedule_name = request.args.get('schedule_name')
 
     if not schedule_name:
-        schedule_name = "TestSchedule"
+        files_xml = list_files_in_path_xml(file_type="CasterSchedule")
+        # schedules is a list of schedule names
+        schedules = []
+        for item in files_xml:
+            schedule_name = item.attrib.get("name")
+            schedules.append(schedule_name)
+        return render_template("schedule_log_info.html", schedule=None, schedules=schedules)
     wf_sess = wf_login()
 
     # Get schedule xml object    

@@ -4,6 +4,18 @@
     <br>
 </head>
 <body>
+    {% if not schedule %}
+        <h3>Please select a schedule:</h3>
+        <form>
+            <select name = "schedule_name" id="schedule_name">
+                {% for sched_name in schedules %}
+                    <option value="{{sched_name}}">{{sched_name}}</option>
+                {% endfor %}
+            <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET">
+        </form>
+    {% else %}
+    
+    
     <h3>Schedule Information:</h3>
         <table>
             {% for key,value in schedule.items() %}
@@ -15,6 +27,8 @@
     <h3>Logs:</h3>
         <table border=3>
             
+            {# TODO: refactor looping through a header tuple rather than hardcoded #}
+
             <th>Start Time</th>
             <th>End Time</th>
             <th>Error?</th>
@@ -29,5 +43,5 @@
                 </tr>
             {% endfor %}
         </table>      
-
+    {% endif %}
 </body>

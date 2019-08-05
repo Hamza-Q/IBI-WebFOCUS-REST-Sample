@@ -5,7 +5,7 @@
     <title>Run Reports</title>
     <br>
     <br>
-    <h1></h1>
+    <h1>Company X</h1>
     <h2>Run Report</h2>
    <!-- <a href='/home' >Go Home</a> -->
 
@@ -38,13 +38,22 @@ font-weight: normal;
 color: #0D3093;
 line-height: 0.7;
 }
+a:link, a:visited {
+  background-color: #0D3093;
+  color: white;
+  font-size: 30px;
+  padding: 14px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
 ul {
   position: fixed;
   top: 0%;
   width: 100%;
   list-style-type: none;
   margin: 0;
-  padding: 30;
+  padding: 0;
   overflow: hidden;
   background-color: #0D3093;
 }
@@ -114,10 +123,11 @@ border: 2px solid #0D3093;
           var frameHolder = document.getElementById('iframe-holder');
           frameHolder.style.backgroundImage="";
           document.getElementById('loader').srcdoc="Finished Loading.";
+          document.getElementById('report_frame').style.display='block';
         }
         function clearFrame(){
           var frame = document.getElementById('report_frame');
-          frame.srcdoc="";
+          frame.style.display="none";
         }
     </script>
 
@@ -139,12 +149,13 @@ border: 2px solid #0D3093;
     
 
     <div class="holds-the-iframe" id="iframe-holder">
-      <iframe onload="clearDiv()"
+      <iframe onload="clearDiv()" class="hidden" src="about:blank"
        id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 80% ">
       </iframe>
     </div>
 
 <ul>
+    <li><img src="https://freepngimg.com/download/globe/6-2-globe-free-png-image.png" id="logo" height="50px" width-="50px" style="padding: 7px; float: left;"/></li>
   <li><a href="/home" id="home">Home</a></li>
   <li><a class="active" href="/run_reports" id="run_reports">Run Reports</a></li>
   <li><a href="/schedules" id="schedules" >Schedules</a></li>

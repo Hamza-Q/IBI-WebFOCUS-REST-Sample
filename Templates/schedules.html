@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title>Run an existing ReportCaster Schedule</title>
     <br>
-    <h1></h1>
+    <br>
+    <h1>Company X</h1>
 
 
              <style>
@@ -41,6 +42,15 @@ font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
 line-height: 1.6;
+}
+a:link, a:visited {
+  background-color: #0D3093;
+  color: white;
+  font-size: 30px;
+  padding: 14px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
 }
 ul {
   position: fixed;
@@ -90,6 +100,14 @@ border: 2px solid #0D3093;
   resize: none;
   color: #0D3093;
 }
+table, th, td {
+border: 1px solid #0D3093;
+text-align: left;
+width: 40%;
+height: 30%;
+color: #0D3093;
+font-size: 20px;;
+}
 </style>
 
     
@@ -125,11 +143,11 @@ border: 2px solid #0D3093;
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
             </form>
             <br>
-            <form method="GET"><input type="submit" name="expand" value="View Expanded Schedule Table"></input></form>
+            <form method="GET" ><input type="submit" name="expand" id="button"value="View Expanded Schedule Table"></input></form>
                 <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
             <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; 
                 please wait a moment after clicking run.</p>
-            <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
+            <p>Schedules assumed to be in the Public Repository and are case sensitive.</p>
             <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
             <iframe name="return_frame" style="position: absolute;"></iframe>
         </div>
@@ -182,6 +200,7 @@ border: 2px solid #0D3093;
 
 
     <ul>
+        <li><img src="https://freepngimg.com/download/globe/6-2-globe-free-png-image.png" id="logo" height="50px" width-="50px" style="padding: 7px; float: left;"/></li>
   <li><a href="/home" id="home">Home</a></li>
   <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
   <li><a class="active" href="/schedules" id="schedules" >Schedules</a></li>

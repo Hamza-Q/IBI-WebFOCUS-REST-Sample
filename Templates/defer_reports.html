@@ -5,7 +5,7 @@
     <title>Defer Reports</title>
     <br>
     <br>
-    <h1></h1>
+    <h1>Company X</h1>
 
    <!-- <a href='/home' >Go Home</a> -->
     <h2>Run a Deferred Report</h2>
@@ -52,13 +52,22 @@ font-weight: normal;
 color: #0D3093;
 line-height: 200%;
 }
+a:link, a:visited {
+  background-color: #0D3093;
+  color: white;
+  font-size: 30px;
+  padding: 14px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
 ul {
   position: fixed;
   top: 0%;
   width: 100%;
   list-style-type: none;
   margin: 0;
-  padding: 30;
+  padding: 0;
   overflow: hidden;
   background-color: #0D3093;
 }
@@ -119,7 +128,7 @@ border: 2px solid #0D3093;
 </head>
 <body>
     <form action="/defer_report" method="post">
-        Report Name: 
+       <P>Report Name: </P>
             <select name = "report_name" id="report_name">
                 {% for rep_name in reports %}
                 <option value="{{rep_name}}">{{rep_name}}</option>
@@ -148,7 +157,7 @@ border: 2px solid #0D3093;
             <input type="submit" value = "Get Selected Report" id="button"/>
         </form>
     {% else %}
-            <p>No reports deferred from this session</p>
+            <p>No reports deferred from this session.</p>
     {% endif %}
 
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
@@ -157,6 +166,7 @@ border: 2px solid #0D3093;
     
 
 <ul>
+    <li><img src="https://freepngimg.com/download/globe/6-2-globe-free-png-image.png" id="logo" height="50px" width-="50px" style="padding: 7px; float: left;"/></li>
   <li><a href="/home" id="home">Home</a></li>
   <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
   <li><a href="/schedules" id="schedules" >Schedules</a></li>

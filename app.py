@@ -89,6 +89,13 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
             files_xml.remove(child)
     # breakpoint()
     return files_xml
+
+def files_xml_to_list(files_xml):
+    item_list = []
+    for item in files_xml:
+        item_name = item.attrib.get("name")
+        item_list.append(item_name)
+    return item_list
   
 
 # signs out of WF after request if it exists (closes connection)
@@ -165,10 +172,7 @@ def run_reports():
 
     files_xml = list_files_in_path_xml(file_type="FexFile")
     # reports is a list of report names
-    reports = []
-    for item in files_xml:
-        report_name = item.attrib.get("name")
-        reports.append(report_name)
+    reports = files_xml_to_list(files_xml)
     return render_template('run_reports.html', reports=reports)
 
 
@@ -254,10 +258,7 @@ def schedules():
     
     files_xml = list_files_in_path_xml(file_type="CasterSchedule")
     # schedules is a list of schedule names
-    schedules = []
-    for item in files_xml:
-        schedule_name = item.attrib.get("name")
-        schedules.append(schedule_name)
+    schedules = files_xml_to_list(files_xml)
     
     return render_template('schedules.html', schedules=schedules)
 
@@ -440,6 +441,12 @@ def view_schedule_log():
     # breakpoint()
 
     return render_template('schedule_log_info.html', schedule=schedule, log_data=log_data)
+
+
+# TODO
+@app.route('/update_schedule')
+def update_schedule():
+    return render_template("update_schedule.html")
 
 
 

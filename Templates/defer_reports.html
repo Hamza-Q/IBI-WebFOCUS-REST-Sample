@@ -22,6 +22,7 @@ body{
 background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
 background-color: LightBlue;
 background-size: cover;
+background-attachment: fixed;
 }
 h1{
 font-size: 50px;
@@ -49,7 +50,7 @@ font-size: 20px;
 font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
-line-height: 0.7;
+line-height: 200%;
 }
 ul {
   position: fixed;
@@ -110,6 +111,9 @@ border: 2px solid #0D3093;
   resize: none;
   color: #0D3093;
 }
+#option {
+ color: #0D3093;
+}
  </style>
     
 </head>
@@ -134,10 +138,11 @@ border: 2px solid #0D3093;
     {% if session.get('deferred_items') %}
 
         <form action="/get_deferred_report" target="report_frame" method="post">
+            <br>
             <p>Select a deferred report created this session. </p>
-            <select name="ticket_name">
+            <select name="ticket_name" id="report_name">
                 {% for ticket_name, report_name in session['deferred_items'].items() %}
-                    <option value="{{ticket_name}}">Report Name: {{report_name}} ; Ticket Name: {{ticket_name}}</option>
+                 <option value="{{ticket_name}}">Report Name: {{report_name}} ; Ticket Name: {{ticket_name}} </option>
                 {% endfor %}
             </select>
             <input type="submit" value = "Get Selected Report" id="button"/>
@@ -155,6 +160,7 @@ border: 2px solid #0D3093;
   <li><a href="/home" id="home">Home</a></li>
   <li><a href="/run_reports" id="run_reports">Run Reports</a></li>
   <li><a href="/schedules" id="schedules" >Schedules</a></li>
+    <li><a href="/view_schedule_log" id="view_schedule_log">View Schedule Log</a></li>
   <li><a class="active" href="/defer_reports" id="defer_reports">Defer Reports</a></li>
     <li><a href="deferred_reports_table" id="deferred_reports_table">View Deferred Reports</a></li>
     <li><a href="/logout" id="logout">Logout</a></li>

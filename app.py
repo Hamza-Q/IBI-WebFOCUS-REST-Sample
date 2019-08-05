@@ -22,7 +22,7 @@ import datetime
 
 # Initialize app
 app = Flask(__name__)
-# Put these in config file or env vars?
+# TODO: Extract these from config file or env vars
 ibi_client_protocol = "http"
 ibi_client_host = "localhost"
 ibi_client_port = "8080"
@@ -256,11 +256,46 @@ def schedules():
         return redirect(url_for('index'))
     # folder = "WFC/Repository/Public"
     
-    files_xml = list_files_in_path_xml(file_type="CasterSchedule")
-    # schedules is a list of schedule names
-    schedules = files_xml_to_list(files_xml)
-    
-    return render_template('schedules.html', schedules=schedules)
+    sched_files_xml = list_files_in_path_xml(file_type="CasterSchedule")
+
+    if not request.args.get("expand"):
+        # schedules is a list of schedule names
+        schedules = files_xml_to_list(sched_files_xml)
+        
+        rep_files_xml = list_files_in_path_xml(file_type="FexFile")
+        reports = files_xml_to_list(rep_files_xml)
+        return render_template('schedules.html', schedules=schedules, reports=reports)
+    else:
+        schedules = sched_files_xml
+        schedule_items = dict()
+        for item in schedules: # always a schedule item
+            item_dict = {}
+            item_name = item.attrib['name']
+            item_dict['desc'] = item.attrib['description']
+            item_dict['summary'] = item.attrib.get('summary')
+            # 13 digit unix epoch time in ms listed in xml
+            # Convert to 10 digit secs unixtime then format as datetime string
+            unixtime_created_ms = int(item.attrib['createdOn'])
+            datetime_created = unixtime_ms_to_datetime(unixtime_created_ms)
+            item_dict['creation_time'] = datetime_created
+        
+            # casterObject is a child of item
+            casterObject = item.find('casterObject')
+            # Get destination address, owner, last time executed
+            if casterObject.get('sendMethod') != 'EMAIL': # only support email schedules
+                continue
+
+            # parse property tagged entries; reportname is an attribute
+            item_dict['destinationAddress'] = casterObject.get('destinationAddress')
+            item_dict['owner'] = casterObject.get('owner')
+            schedule_items[item_name] = item_dict
+        # print(item.attrib)
+        # tickets_print = pprint.pformat(deferred_tickets)
+
+        # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated, most to least recent
+        schedule_items_list = sorted(schedule_items.items(), key= lambda x: x[1]['creation_time'], reverse=True)
+
+        return render_template('schedules.html', schedules=schedule_items_list, expand=True)
 
 @app.route('/run_schedule', methods=['POST'])
 def run_schedule():
@@ -343,17 +378,17 @@ def view_schedule_log():
     if not nextRunTime:
         nextRunTime = "None Scheduled"
     schedule = {
-        'name': schedule_name,
-        'owner':    casterObject.attrib['owner'],
-        'id':   schedule_id,
-        'description':  casterObject.attrib.get('description'),
-        'summary':      casterObject.attrib.get('summary'),
-        'sendMethod':   casterObject.attrib.get('sendMethod'),
-        'destinationAddress':   casterObject.attrib.get('destinationAddress'),
-        'lastTimeExecuted':     lastTimeExecuted,
-        'statusLastExecuted':   casterObject.attrib.get('statusLastExecuted'),
-        'nextRunTime':  nextRunTime,
-        'procedures':   []
+        'Name': schedule_name,
+        'Owner':    casterObject.attrib['owner'],
+        'ID':   schedule_id,
+        'Description':  casterObject.attrib.get('description'),
+        'Summary':      casterObject.attrib.get('summary'),
+        'Send Method':   casterObject.attrib.get('sendMethod'),
+        'Destination Address':   casterObject.attrib.get('destinationAddress'),
+        'Last Time Executed':     lastTimeExecuted,
+        'Status Last Executed':   casterObject.attrib.get('statusLastExecuted'),
+        'Next Run Time':  nextRunTime,
+        'Procedures':   []
     }
     # Parse xml for procedure information
 
@@ -364,7 +399,7 @@ def view_schedule_log():
     # taskList can have multiple items
     for item in taskList:
         procedureName = item.attrib['procedureName']
-        schedule['procedures'].append(procedureName)
+        schedule['Procedures'].append(procedureName)
 
     # Have schedule id, now use it to retrieve log list 
     url =   f"{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}" + \

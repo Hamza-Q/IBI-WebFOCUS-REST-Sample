@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Run an existing ReportCaster Schedule</title>
     <br>
-    <h1>Company X</h1>
+    <h1></h1>
 
 
              <style>
@@ -95,17 +95,37 @@ border: 2px solid #0D3093;
     
 </head>
     <body>
+
+      {% if not expand %}
+      
         <div style="display:inline-block; width:40%; align-content: flex-start;">
+            <h3>Create Schedule</h3>
+              <form action="/create_schedule" method="post">
+                Report Name:
+                  <select name = "report_name" id="report_name">
+                      {% for rep_name in reports %}
+                        <option value="{{rep_name}}">{{rep_name}}</option>
+                      {% endfor %}
+                  </select>
+                Email To:
+                <input type="text" name="destinationAddress" required/>
+                <input type="submit" value = "Submit" id="button"/>
+            </form>
+
+
+
             <h3>Run or View Details for an existing schedule:</h3>
             <form>
                <p> Schedule Name: </p>
                 <select name = "schedule_name" id="schedule_name">
                   {% for sched_name in schedules %}
-                  <option value="{{sched_name}}">{{sched_name}}</option>
+                    <option value="{{sched_name}}">{{sched_name}}</option>
                   {% endfor %}
                 <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST" formtarget="return_frame" id="button"/>
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
             </form>
+            <br>
+            <form method="GET"><input type="submit" name="expand" value="View Expanded Schedule Table"></input></form>
                 <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
             <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; 
                 please wait a moment after clicking run.</p>
@@ -113,6 +133,53 @@ border: 2px solid #0D3093;
             <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
             <iframe name="return_frame" style="position: absolute;"></iframe>
         </div>
+
+      {% else %}
+      
+        <div style="display:inline-block; width:40%; align-content: flex-start;">
+            <h3>Existing schedules:</h3>
+
+            <table border=1>
+                <th>Schedule Name</th>
+                <th>Creation Time</th>
+                <th>Description</th>	
+                <th>Summary</th>
+                <th>Destination Address</th>
+                <th>Owner</th>
+                <th>Action</th>
+              
+                  
+                {% for name, item_dict in schedules %}
+                  <tr>
+                    <td>{{name}}</td>
+                    <td>{{item_dict.creation_time}}</td>
+                    <td>{{item_dict.desc}}</td>
+                    <td>{{item_dict.summary}}</td>
+                    <td>{{item_dict.destinationAddress}}</td>
+                    <td>{{item_dict.owner}}</td>
+                    <td>
+                        <form>
+                          <input type="hidden" name="schedule_name" value="{{name}}"/>
+                          <input type="submit" value = "Run Schedule" 
+                            formaction="/run_schedule" formmethod="POST" formtarget="return_frame" id="button"/>
+                          <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
+                        </form>
+                    </td>
+                          
+                      
+                  </tr>
+                {% endfor %}
+            </table>
+
+            <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
+
+            <iframe name="return_frame" style="position: absolute;"></iframe>
+
+        </div>
+
+      {% endif %}
+
+
 
     <ul>
   <li><a href="/home" id="home">Home</a></li>

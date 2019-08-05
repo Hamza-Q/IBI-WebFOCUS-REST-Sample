@@ -5,7 +5,7 @@
     <title>Run Reports</title>
     <br>
     <br>
-    <h1>Company X</h1>
+    <h1></h1>
     <h2>Run Report</h2>
    <!-- <a href='/home' >Go Home</a> -->
 
@@ -85,23 +85,51 @@ border: 2px solid #0D3093;
   font-family: "Times New Roman", Times, serif;
   resize: none;
   color: #0D3093;
+
+  
+}
+
+.holds-the-iframe {
+  height:650px;
+  width:800px;
 }
     </style>
 
 </head>
+
 <body>
+    <script>
+        function loadDiv() {
+          var frameHolder = document.getElementById('iframe-holder');
+          frameHolder.style.backgroundImage="url(https://media2.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif)";
+        }
+        function clearFrameHolder(){
+          var frameHolder = document.getElementById('iframe-holder')
+          frameHolder.style.backgroundImage="";
+        }
+        function clearFrame(){
+          var frame = document.getElementById('iframe-holder')
+          divObj.style.setAttribute( 'src', '' );
+        }
+    </script>
+
     <form action="/run_report" id="run_report "target="report_frame" method="post">
        <p> Report Name:  </p>
         <select name = "report_name" id="report_name">
             {% for rep_name in reports %}
-            <option value="{{rep_name}}">{{rep_name}}</option>
+              <option value="{{rep_name}}">{{rep_name}}</option>
             {% endfor %}
-        <input type="submit" value = "Submit" id="button"/>
+        <input type="submit" value = "Submit" id="button"
+          onclick="loadDiv()"
+        />
     </form>
  <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
     <p>Reports assumed to be in the Public Repository and are case sensitive.</p>
-    <iframe name="report_frame" style="position: absolute; height: 70%; width: 80% ">Report Appears Here</iframe>
+    <div class="holds-the-iframe" id="iframe-holder">
+      <iframe onload="clear(document.getElementById('iframe-holder'))"
+       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 80% ">Report Appears Here</iframe>
+    </div>
 
 <ul>
   <li><a href="/home" id="home">Home</a></li>

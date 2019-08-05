@@ -89,9 +89,15 @@ border: 2px solid #0D3093;
   
 }
 
+.loader{
+  height:30px;
+  width:200px;
+}
+
 .holds-the-iframe {
-  height:650px;
+  height:640px;
   width:800px;
+  background-repeat:no-repeat;
 }
     </style>
 
@@ -102,14 +108,16 @@ border: 2px solid #0D3093;
         function loadDiv() {
           var frameHolder = document.getElementById('iframe-holder');
           frameHolder.style.backgroundImage="url(https://media2.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif)";
+          document.getElementById('loader').srcdoc="Loading Report...";
         }
-        function clearFrameHolder(){
-          var frameHolder = document.getElementById('iframe-holder')
+        function clearDiv(){
+          var frameHolder = document.getElementById('iframe-holder');
           frameHolder.style.backgroundImage="";
+          document.getElementById('loader').srcdoc="Finished Loading.";
         }
         function clearFrame(){
-          var frame = document.getElementById('iframe-holder')
-          divObj.style.setAttribute( 'src', '' );
+          var frame = document.getElementById('report_frame');
+          frame.srcdoc="";
         }
     </script>
 
@@ -120,15 +128,20 @@ border: 2px solid #0D3093;
               <option value="{{rep_name}}">{{rep_name}}</option>
             {% endfor %}
         <input type="submit" value = "Submit" id="button"
-          onclick="loadDiv()"
+          onclick="loadDiv(); clearFrame();"
         />
     </form>
+    <iframe class="loader" id="loader"></iframe>
  <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
     <p>Reports assumed to be in the Public Repository and are case sensitive.</p>
+
+    
+
     <div class="holds-the-iframe" id="iframe-holder">
-      <iframe onload="clear(document.getElementById('iframe-holder'))"
-       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 80% ">Report Appears Here</iframe>
+      <iframe onload="clearDiv()"
+       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 80% ">
+      </iframe>
     </div>
 
 <ul>

@@ -150,6 +150,8 @@ font-size: 20px;;
                   {% for sched_name in schedules %}
                     <option value="{{sched_name}}">{{sched_name}}</option>
                   {% endfor %}
+                </select>
+                <br>
                 <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST"  id="button"/>
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
             </form>

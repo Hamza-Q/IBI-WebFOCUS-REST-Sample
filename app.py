@@ -317,7 +317,13 @@ def run_schedule():
                             data = payload )
     # print(response)
     # print(response.content)
-    return response.content
+    if response.status_code == 200:
+        flash(f"Successfully added schedule: {schedule_name} to the queue.")
+    elif response.status_cdode == 404:
+        flash(f"Error: Could not run schedule {schedule_name}")
+    else:
+        flash(f"Undetermined error; Response status code: {response.status_code}")
+    return redirect(request.referrer)
 
 
 @app.route('/schedule_report', methods=['POST'])
@@ -530,11 +536,13 @@ def defer_report():
     #       with key=ticket_name, value=report_name
     if response.status_code!=200:
         print("error status code != 200")
-        return "Error: Could not defer report."
+        flash("Error: Could not defer report.")
+        return redirect(url_for('defer_reports'))
     root = ET.fromstring(response.content)
     if root.attrib['returncode'] != "10000":
         print("error retcode != 10k")
-        return "Error: Could not defer report."
+        flash("Error: Could not defer report.")
+        return redirect(url_for('defer_reports'))
     for child in root:
         if child.tag == 'rootObject':
             rootObject = child
@@ -543,10 +551,12 @@ def defer_report():
 
     if 'deferred_items' not in session:
         session['deferred_items'] = {}
+
     session['deferred_items'][ticket_name] = report_name
     session.modified=True 
     # breakpoint()
     # print(session)
+    flash("Successfully ran deferred report:", report_name)
     return redirect(url_for('defer_reports'))
 
 # Retrieves deferred report data

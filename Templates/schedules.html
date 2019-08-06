@@ -113,10 +113,21 @@ font-size: 20px;;
     
 </head>
     <body align="center">
-
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+           {% for message in messages %}
+              {{ message }}
+           {% endfor %}
+        {% endif %}
+    {% endwith %}
+     
+     {% if error %}
+           <p><strong>Error:</strong> {{ error }}
+     {% endif %}
       {% if not expand %}
+      <br>
       
-        <div style="display:inline-block; align-content: flex-start;">
+        <div style="display:inline-block;">
             <h3>Create Schedule</h3>
               <form action="/create_schedule" method="post">
                 Report Name:
@@ -139,17 +150,13 @@ font-size: 20px;;
                   {% for sched_name in schedules %}
                     <option value="{{sched_name}}">{{sched_name}}</option>
                   {% endfor %}
-                <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST" formtarget="return_frame" id="button"/>
+                <input type="submit" value = "Run Schedule" formaction="/run_schedule" formmethod="POST"  id="button"/>
                 <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
             </form>
             <br>
             <form method="GET" ><input type="submit" name="expand" id="button"value="View Expanded Schedule Table"></input></form>
                 <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
-            <p>Note: Schedule Job Number will show up in the frame below and may take some time to load; 
-                please wait a moment after clicking run.</p>
-            <p>Schedules assumed to be in the Public Repository and are case sensitive.</p>
-            <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
-            <iframe name="return_frame" style="width:50%"></iframe>
+            <p>Note: Schedules assumed to be in the Public Repository and are case sensitive.</p>
         </div>
 
       {% else %}
@@ -179,7 +186,7 @@ font-size: 20px;;
                         <form>
                           <input type="hidden" name="schedule_name" value="{{name}}"/>
                           <input type="submit" value = "Run Schedule" 
-                            formaction="/run_schedule" formmethod="POST" formtarget="return_frame" id="button"/>
+                            formaction="/run_schedule" formmethod="POST" id="button"/>
                           <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
                         </form>
                     </td>
@@ -191,7 +198,6 @@ font-size: 20px;;
 
             <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
 
-            <iframe name="return_frame" align="center" style="position: absolute;"></iframe>
 
         </div>
 

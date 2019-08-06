@@ -7,8 +7,22 @@
     <br>
     <h1>Company X</h1>
 
-   <!-- <a href='/home' >Go Home</a> -->
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+       {% for message in messages %}
+          {{ message }}
+       {% endfor %}
+       
+    <br>
+    {% endif %}
+    {% endwith %}
+    
+    {% if error %}
+          <p><strong>Error:</strong> {{ error }}
+    {% endif %}
+      
     <h2>Run a Deferred Report</h2>
+
     <h3>Process:</h3>
     <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.</p>
 

@@ -10,13 +10,8 @@
    <!-- <a href='/home' >Go Home</a> -->
     <h2>Run a Deferred Report</h2>
     <h3>Process:</h3>
-    <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.
+    <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.</p>
 
-    </p>
-
-
-
-    <br>
         <style>
 body{
 background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
@@ -128,14 +123,15 @@ border: 2px solid #0D3093;
 </head>
 <body>
     <form action="/defer_report" method="post">
-       <P>Report Name: </P>
             <select name = "report_name" id="report_name">
                 {% for rep_name in reports %}
-                <option value="{{rep_name}}">{{rep_name}}</option>
+                <option  value="{{rep_name}}">{{rep_name}}</option>
                 {% endfor %}
         <br>
-        <p>Ticket Description:<input type="text" name = "IBIRS_tDesc" id="IBIRS_tDesc" placeholder = "Enter ticket description (required)" required/></p>
-        <br>
+          <input type="text" style="width:25%" name = "IBIRS_tDesc" id="IBIRS_tDesc" 
+          placeholder = "Enter ticket description (required)" required/>
+        
+        
         <input type="submit" value = "Submit" id="button"/>
     </form>
     <br>

@@ -23,18 +23,18 @@ color: #0D3093;
 line-height: 0.7;
 }
 h2{
-font-size: 30px;
+font-size: 25px;
 font-family: "Times New Roman", Times, serif;
 font-weight: bold;
 color: #0D3093;
-line-height: 0.8;
+line-height: 0.7;
 }
 h3{
 font-size: 25px;
 font-family: "Times New Roman", Times, serif;
 font-weight: bold;
 color: #0D3093;
-line-height: 0.7;
+line-height: 0.5;
 }
 p{
 font-size: 20px;
@@ -112,11 +112,11 @@ font-size: 20px;;
 
     
 </head>
-    <body>
+    <body align="center">
 
       {% if not expand %}
       
-        <div style="display:inline-block; width:40%; align-content: flex-start;">
+        <div style="display:inline-block; align-content: flex-start;">
             <h3>Create Schedule</h3>
               <form action="/create_schedule" method="post">
                 Report Name:
@@ -134,7 +134,7 @@ font-size: 20px;;
 
             <h3>Run or View Details for an existing schedule:</h3>
             <form>
-               <p> Schedule Name: </p>
+               Schedule Name:
                 <select name = "schedule_name" id="schedule_name">
                   {% for sched_name in schedules %}
                     <option value="{{sched_name}}">{{sched_name}}</option>
@@ -149,15 +149,15 @@ font-size: 20px;;
                 please wait a moment after clicking run.</p>
             <p>Schedules assumed to be in the Public Repository and are case sensitive.</p>
             <p>The job number can be used to retrieve a ReportCaster log (to be added in a future version)</p>
-            <iframe name="return_frame" style="position: absolute;"></iframe>
+            <iframe name="return_frame" style="width:50%"></iframe>
         </div>
 
       {% else %}
       
-        <div style="display:inline-block; width:40%; align-content: flex-start;">
+        <div style="display:inline-block;">
             <h3>Existing schedules:</h3>
 
-            <table border=1>
+            <table align="center" border=1>
                 <th>Schedule Name</th>
                 <th>Creation Time</th>
                 <th>Description</th>	
@@ -191,7 +191,7 @@ font-size: 20px;;
 
             <p>Schedules assumed to be in the Public Repository and are case sensitive</p>
 
-            <iframe name="return_frame" style="position: absolute;"></iframe>
+            <iframe name="return_frame" align="center" style="position: absolute;"></iframe>
 
         </div>
 

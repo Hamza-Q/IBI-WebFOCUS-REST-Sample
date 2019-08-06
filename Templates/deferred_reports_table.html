@@ -5,7 +5,7 @@
     <title>Defer Report Table</title>
     <br>
     <br>
-    <h1>Company X</h1>
+    <h1 align="center">Company X</h1>
    <!-- <a href="/home">Go Home</a><br> -->
          <style>
 body{
@@ -120,7 +120,7 @@ font-size: 20px;;
  </style>
 </head>
 <body>
-<div style="display:inline-table">
+<div style="display:inline-table" align="center">
 {% with messages = get_flashed_messages() %}
    {% if messages %}
       {% for message in messages %}
@@ -135,7 +135,7 @@ font-size: 20px;;
 
 <h2>Deferred Reports:</h2>
 	<table border=1>
-	<th>Data/Time Submitted</th>
+	<th>Date/Time Submitted</th>
 	<th>Report Name</th>
 	<th>Description</th>	
     <th>Status</th>
@@ -150,12 +150,15 @@ font-size: 20px;;
 			<td>{{item_dict.status}}</td>
             <td>
                 {% if item_dict.status=='CTH_DEFER_READY' %}
+                    <!--
                     <form method="post" action="update_tag" class="inline" target="report_frame">
                         <input type="hidden" name="name" value="{{name}}" /> 
                         <button type="submit" name="accept_tag" value="true" class="link-button" id="button">
                         Save Item
                         </button>
                     </form>
+                    -->
+
                     <form method="post" action="get_deferred_report" class="inline" target="report_frame">
                             <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button" >View Item</button>
                     </form>

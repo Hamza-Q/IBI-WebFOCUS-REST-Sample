@@ -13,7 +13,7 @@
     <style>
 body{
 background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: LightBlue;
+background-color: lightcyan;
 background-size: cover;
 background-attachment: fixed;
 }
@@ -104,19 +104,23 @@ border: 2px solid #0D3093;
 }
 
 .holds-the-iframe {
+  display:block;
   height:640px;
-  width:800px;
   background-repeat:no-repeat;
 }
-    </style>
+.hidden{
+  display: none;
+}
+ 
+</style>
 
 </head>
 
-<body>
+<body align="center">
     <script>
         function loadDiv() {
           var frameHolder = document.getElementById('iframe-holder');
-          frameHolder.style.backgroundImage="url(https://media2.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif)";
+          frameHolder.style.background="url(https://gifimage.net/wp-content/uploads/2017/09/ajax-loading-gif-transparent-background-8.gif) center center no-repeat";
           document.getElementById('loader').srcdoc="Loading Report...";
         }
         function clearDiv(){
@@ -150,7 +154,7 @@ border: 2px solid #0D3093;
 
     <div class="holds-the-iframe" id="iframe-holder">
       <iframe onload="clearDiv()" class="hidden" src="about:blank"
-       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 80% ">
+       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 90% ">
       </iframe>
     </div>
 

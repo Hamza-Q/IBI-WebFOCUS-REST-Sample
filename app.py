@@ -8,7 +8,7 @@ Hamza_Qureshi@ic.ibi.com
 
 
 # Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect, flash, g, send_from_directory
+from flask import Flask, render_template, request, session, url_for, redirect, flash, g, send_from_directory, make_response, send_file, abort
 import requests
 # wfrs is an API wrapper for WebFOCUS REST calls, currently in development
 import wfrs
@@ -17,6 +17,8 @@ import pprint
 import datetime
 import time 
 import os
+from base64 import b64encode
+
 
 # sha256 hashing for password encryption - TBC
 # import sha256
@@ -192,7 +194,7 @@ def delete_item():
         response = wf_sess.post(ibi_rest_url, data = payload)
     else:
         payload['IBIRS_action'] = 'delete'
-        response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
+        response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{item_name}',
                             data = payload )
     message = f"Deleted Item: {item_name}" if response.status_code == 200 else "Could not delete item"
     flash(message) 
@@ -251,7 +253,7 @@ def run_report():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
     # TODO: Remove hardcoded URL
-    response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
+    wf_response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
                             data = payload )
     # response = wf_sess.mr_run_report(folderName2, reportName, 'IBIRS_clientPath=%s' % IBIRS_clientPath)
     #breakpoint()
@@ -263,8 +265,23 @@ def run_report():
     # print(response)
     # print(response.content)
     
-    report = response.text
-
+    #breakpoint()
+    report = wf_response.content
+    content_type = wf_response.headers.get('Content-Type')
+    if 'text/html' in content_type:
+        response = make_response(report)
+        return response
+    
+    if 'image' in content_type:
+        report_image = b64encode(report).decode('utf-8')
+        report_html = f'<img src="data:;base64,{report_image}"/>'
+        response = make_response(report_html)
+        # response.headers.set('Content-Type', wf_response.headers.get('Content-Type'))
+        #response.headers.set(
+           # 'Content-Disposition', 'attachment', filename=f'{report_name}.png') # Get proper image type?
+           # 'Content-Disposition', 'attachment', filename=f'{report_name}.png') # Get proper image type?
+           # 'Content-Disposition', 'inline') # Get proper image type?
+        return response
     # HTML document has links to other CSS/JS/JSON sources but below
     # is not a great approach; requested resources may require 
     # authentication which the browser requests will not have.
@@ -274,7 +291,7 @@ def run_report():
      report = report.replace('/ibi_apps', static_url) 
     """
 
-    return report
+    return response
 
 # Used to receive webfocus report local files (js/css) from proper source
 # Currently always sends response header as {'Content-Type': 'text/html'} even for .js/.css files
@@ -282,6 +299,8 @@ def run_report():
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
     #headers = request.headers
+    if not request.referrer:
+        abort(403)
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
     response = wf_sess.get(base_url+page, stream=True)
@@ -364,7 +383,7 @@ def run_schedule():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
     # TODO: Remove hardcoded URL
-    response = wf_sess.post(f'http://localhost:8080/ibi_apps/rs/ibfs/WFC/Repository/Public/{schedule_name}',
+    response = wf_sess.post(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
                             data = payload )
     # print(response)
     # print(response.content)
@@ -704,7 +723,7 @@ def get_deferred_report():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
     # works with post request but not get
-    response = wf_sess.get('http://localhost:8080/ibi_apps/rs', params=params,
+    response = wf_sess.get(ibi_rest_url, params=params,
                             data = payload )
     # print(response)
     # print(response.content)

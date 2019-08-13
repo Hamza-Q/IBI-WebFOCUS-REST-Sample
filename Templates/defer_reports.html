@@ -5,25 +5,15 @@
     <title>Defer Reports</title>
     <br>
     <br>
-    <h1>Company X</h1>
-
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-       {% for message in messages %}
-          {{ message }}
-       {% endfor %}
-       
     <br>
-    {% endif %}
-    {% endwith %}
-    
-    {% if error %}
-          <p><strong>Error:</strong> {{ error }}
-    {% endif %}
-      
-    <h2>Run a Deferred Report</h2>
 
-    <h3>Process:</h3>
+    <!--<h1>Company X</h1>-->
+
+
+      
+    <h1>Run a Deferred Report</h1>
+
+    <h2>Process:</h2>
     <p>Select a report to run deferred. It will return a token that will be saved to your current browser session.</p>
 
         <style>
@@ -55,7 +45,7 @@ color: #0D3093;
 line-height: 0.7;
 }
 p{
-font-size: 20px;
+font-size: 22px;
 font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
@@ -107,6 +97,17 @@ cursor: pointer;
 font-size: 20px;
 font-family: "Times New Roman", Times, serif;
 }
+#view_table{
+background-color: #0D3093;
+border: none;
+color: white;
+padding: 14px 28px;
+text-decoration: none;
+margin: 4px 2px;
+cursor: pointer;
+font-size: 30px;
+font-family: "Times New Roman", Times, serif;
+}
 #report_name{
 border: 2px solid #0D3093;
   border-radius: 4px;
@@ -149,10 +150,24 @@ border: 2px solid #0D3093;
         <input type="submit" value = "Submit" id="button"/>
     </form>
     <br>
-
-    <h3>View a Deferred Report</h3>
     <br>
-    <a href="/deferred_reports_table" id="button">View Table of all deferred reports</a>
+     {% with messages = get_flashed_messages() %}
+    {% if messages %}
+       {% for message in messages %}
+       <p style="color:darkred"><strong> {{ message }} </strong></p>
+       {% endfor %}
+
+    <br>
+    {% endif %}
+    {% endwith %}
+
+    {% if error %}
+          <p><strong>Error:</strong> {{ error }}</p>
+    {% endif %}
+
+    <h2>View a Deferred Report</h2>
+    <br>
+    <a href="/deferred_reports_table" id="view_table">View Table of all deferred reports</a>
     
     {% if session.get('deferred_items') %}
 

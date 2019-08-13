@@ -5,8 +5,8 @@
     <title>Run Reports</title>
     <br>
     <br>
-    <h1>Company X</h1>
-    <h2>Run Report</h2>
+    <!--<h1>Company X</h1>-->
+    <h1>Run Report</h1>
    <!-- <a href='/home' >Go Home</a> -->
 
 
@@ -32,7 +32,7 @@ color: #0D3093;
 line-height: 0.7;
 }
 p{
-font-size: 20px;
+font-size: 22px;
 font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
@@ -136,7 +136,7 @@ border: 2px solid #0D3093;
     </script>
 
     <form action="/run_report" id="run_report "target="report_frame" method="post">
-       <p> Report Name:  </p>
+       <h2> Report Name:  </h2>
         <select name = "report_name" id="report_name">
             {% for rep_name in reports %}
               <option value="{{rep_name}}">{{rep_name}}</option>

@@ -5,7 +5,7 @@
     <title>Defer Report Table</title>
     <br>
     <br>
-    <h1 align="center">Company X</h1>
+   <!-- <h1 align="center">Company X</h1>-->
    <!-- <a href="/home">Go Home</a><br> -->
          <style>
 body{
@@ -31,12 +31,12 @@ line-height: 0.8;
 h3{
 font-size: 25px;
 font-family: "Times New Roman", Times, serif;
-font-weight: bold;
+font-weight: normal;
 color: #0D3093;
 line-height: 0.7;
 }
 p{
-font-size: 20px;
+font-size: 22px;
 font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
@@ -77,7 +77,7 @@ li a:hover:not(.active) {
 a.active {
   background-color: LightBlue;
 }
-#button {
+.link-button {
 background-color: #0D3093;
 border: none;
 color: white;
@@ -88,17 +88,7 @@ cursor: pointer;
 font-size: 20px;
 font-family: "Times New Roman", Times, serif;
 }
-#ticket_name {
-background-color: #0D3093;
-border: none;
-color: white;
-padding: 12px 24px;
-text-decoration: none;
-margin: 4px 2px;
-cursor: pointer;
-font-size: 20px;
-font-family: "Times New Roman", Times, serif;
-}
+
 #schedule_name{
 border: 2px solid #0D3093;
   border-radius: 4px;
@@ -111,11 +101,38 @@ border: 2px solid #0D3093;
   color: #0D3093;
 }
 table, th, td {
+background-color: white;
 border: 1px solid #0D3093;
 text-align: center;
-width: 70%;
+width: 90%;
 color: #0D3093;
-font-size: 20px;;
+font-size: 20px;
+}
+#x {
+  background-color: #0D3093;
+
+  padding:initial;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+
+  background-color: white;
+  text-align: center;
+  width: auto;
+  color: #0D3093;
+  font-size: 20px;
+
+}
+.delete-button {
+background-color: darkred;
+border: none;
+color: white;
+padding: 12px 24px;
+text-decoration: none;
+margin: 4px 2px;
+cursor: pointer;
+font-size: 20px;
+font-family: "Times New Roman", Times, serif;
 }
  </style>
 </head>
@@ -133,9 +150,11 @@ font-size: 20px;;
       <p><strong>Error:</strong> {{ error }}
 {% endif %}
 
-<h2>Deferred Reports:</h2>
+<h1>Deferred Reports:</h1>
 	<table border=1>
-	<th>Date/Time Submitted</th>
+	<th>
+    <a id="x" href = "?reverse={{not reverse}}">Date/Time Submitted</a>
+  </th>
 	<th>Report Name</th>
 	<th>Description</th>	
     <th>Status</th>
@@ -144,12 +163,14 @@ font-size: 20px;;
     
 	{% for name, item_dict in deferred_items %}
 		<tr>
-			<td>{{item_dict.creation_time}}</td>
+			<td>
+        {{item_dict.creation_time}}
+      </td>
 			<td>{{item_dict.report_name}}</td>
 			<td>{{item_dict.desc}}</td>
-			<td>{{item_dict.status}}</td>
+			<td style="color:{{'limegreen' if item_dict.status=='READY' else 'red'}}" >{{item_dict.status}}</td>
             <td>
-                {% if item_dict.status=='CTH_DEFER_READY' %}
+                {% if item_dict.status=='READY' %}
                     <!--
                     <form method="post" action="update_tag" class="inline" target="report_frame">
                         <input type="hidden" name="name" value="{{name}}" /> 
@@ -160,7 +181,12 @@ font-size: 20px;;
                     -->
 
                     <form method="post" action="get_deferred_report" class="inline" target="report_frame">
-                            <button type="submit" name="ticket_name" id="ticket_name" value="{{name}}" class="link-button" >View Item</button>
+                            <button type="submit" name="ticket_name" value="{{name}}" class="link-button" >View Item</button>
+                    </form>
+
+                    <form method="post" action="delete_item" class="inline">
+                        <input type="hidden" name="item_type" value="deferred"/>
+                        <button type="submit" name="item_name" value="{{name}}" class="delete-button" >Delete Item</button>
                     </form>
                 
                 {% endif %}
@@ -176,7 +202,7 @@ font-size: 20px;;
 <div style="display:inline-block">
     <br>
     <br>
-<p>Note: Reports will show up in the frame below.</p>
+<h3>Note: Reports will show up in the frame below.</h3>
     <iframe name="report_frame" style="position: absolute; height: 80%; width: 50% ">Report Appears Here</iframe>
 </div>
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <h1>Welcome to Company X</h1>
+    <h1>Welcome to IBI IC</h1>
 		<h2><img src="https://freepngimg.com/download/globe/6-2-globe-free-png-image.png" id="logo" height="200px" width-="50px" style=" display: block; margin-left: auto; margin-right: auto; padding: 7px; text-align: center;"/></h2>
 	<br>
 	<br>
@@ -28,7 +28,7 @@ text-align: center;
 #login {
 text-align: center;
 }
-#user {
+.user {
  border: 2px solid #0D3093;
   border-radius: 4px;
   height: 75px;
@@ -55,8 +55,8 @@ font-family: "Times New Roman", Times, serif;
 <body>
 <div >
 <form action="/login_auth" method="POST" id="login">
-	<input type="text" name = "user_name" placeholder="Username" required id="user"/> </br>
-	<input type="password" name = "password" placeholder="Password" required id="user"/> </br>
+	<input type="text" name = "user_name" placeholder="Username" required class="user"/> </br>
+	<input type="password" name = "password" placeholder="Password" required class="user"/> </br>
 
 	<input type="submit" value = Login id ="button"/>
 	{% if error %}

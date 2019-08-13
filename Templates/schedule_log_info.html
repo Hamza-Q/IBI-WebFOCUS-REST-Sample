@@ -1,12 +1,13 @@
 <head>
        <!-- ><a href='/schedules'>Back to schedules</a> <br> -->
     <!-- ><a href='/home'>Go Home</a> -->
+    <title>{{schedule["Name"] + " Info + Log" if schedule else "View Schedule Log"}}</title>
     <br>
     <br>
     <br>
-    <h1>Company X</h1>
+   <!-- <h1>Company X</h1> -->
 
-    <h2>Schedule Information:</h2>
+    <h1>Schedule Information:</h1>
 
     <style>
 body{
@@ -29,15 +30,9 @@ font-weight: bold;
 color: #0D3093;
 line-height: 0.7;
 }
-h3{
-font-size: 25px;
-font-family: "Times New Roman", Times, serif;
-font-weight: bold;
-color: #0D3093;
-line-height: 0.7;
-}
+
 p{
-font-size: 20px;
+font-size: 22px;
 font-family: "Times New Roman", Times, serif;
 font-weight: normal;
 color: #0D3093;
@@ -101,6 +96,7 @@ border: 2px solid #0D3093;
   color: #0D3093;
 }
 table, th, td {
+background-color: white;
 border: 1px solid #0D3093;
 text-align: left;
 width: 40%;
@@ -112,7 +108,7 @@ font-size: 20px;;
 </head>
 <body>
     {% if not schedule %}
-        <h3>Please select a schedule:</h3>
+        <h2>Please select a schedule:</h2>
         <form>
             <select name = "schedule_name" id="schedule_name">
                 {% for sched_name in schedules %}
@@ -126,11 +122,11 @@ font-size: 20px;;
         <table>
             {% for key,value in schedule.items() %}
                 <tr>
-                    <td>{{key}}</td>    <td>{{value}} </td>
+                    <td><strong>{{key}}</strong></td>    <td>{{value}} </td>
                 </tr>
             {% endfor %}
         </table>        
-    <h3>Logs:</h3>
+    <h2>Logs:</h2>
         <table border=3>
             
             {# TODO: refactor looping through a header tuple rather than hardcoded #}
@@ -144,7 +140,7 @@ font-size: 20px;;
                 <tr>                    
                     <td>{{log_item.startTime}}</td>
                     <td>{{log_item.endTime}}</td>
-                    <td>{{log_item.errorType}}</td>
+                <td style=color:{{'limegreen' if log_item.errorType=='None' else 'red'}}>{{log_item.errorType}}</td>
                     <td>{{log_item.owner}}</td>
                 </tr>
             {% endfor %}

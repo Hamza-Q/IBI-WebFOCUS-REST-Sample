@@ -11,8 +11,9 @@
 
     <style>
 body{
-background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: LightBlue;
+/*background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;*/
+background-color: azure;
 background-size: cover;
 background-attachment: fixed;
 }
@@ -106,6 +107,14 @@ font-size: 20px;;
 }
     </style>
 </head>
+<script>
+    function load(){
+      var loader = document.getElementById('loader');
+      loader.srcdoc='<t align="center" style="color:yellow">Loading Report...</t>';
+      loader.style.display="inline-block";
+      loader.style.backgroundColor="black";
+    }
+</script>
 <body>
     {% if not schedule %}
         <h2>Please select a schedule:</h2>
@@ -114,11 +123,15 @@ font-size: 20px;;
                 {% for sched_name in schedules %}
                     <option value="{{sched_name}}">{{sched_name}}</option>
                 {% endfor %}
-            <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button">
+            <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button"
+              onclick="load()"
+            />
         </form>
+        <iframe id="loader" style="height:35px;display:none"></iframe>
     {% else %}
     
     
+
         <table>
             {% for key,value in schedule.items() %}
                 <tr>
@@ -126,6 +139,14 @@ font-size: 20px;;
                 </tr>
             {% endfor %}
         </table>        
+      
+        {% if not log_data %}
+        {% if error %}
+          <p><strong>Error:</strong> {{ error }}
+        {% endif %}
+  
+  
+      {% else %}
     <h2>Logs:</h2>
         <table border=3>
             
@@ -140,11 +161,14 @@ font-size: 20px;;
                 <tr>                    
                     <td>{{log_item.startTime}}</td>
                     <td>{{log_item.endTime}}</td>
-                <td style=color:{{'limegreen' if log_item.errorType=='None' else 'red'}}>{{log_item.errorType}}</td>
+                    <td style=color:{{'limegreen' if log_item.errorType=='None' else 'orange' if log_item.errorType=='Running' else 'red'}}>
+                      <strong>{{log_item.errorType}}</strong>
+                    </td>
                     <td>{{log_item.owner}}</td>
                 </tr>
             {% endfor %}
         </table>      
+        {% endif %}
     {% endif %}
 
 

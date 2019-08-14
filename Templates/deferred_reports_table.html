@@ -9,8 +9,9 @@
    <!-- <a href="/home">Go Home</a><br> -->
          <style>
 body{
-background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: LightBlue;
+/*background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;*/
+background-color: azure;
 background-size: cover;
 background-attachment: fixed;
 }
@@ -135,7 +136,22 @@ font-size: 20px;
 font-family: "Times New Roman", Times, serif;
 }
  </style>
+ 
 </head>
+
+<script>
+    function load(){
+      var loader = document.getElementById('loader');
+      loader.srcdoc='<t align="center" style="color:yellow">Loading...</t>';
+      loader.style.display="inline-block";
+      loader.style.backgroundColor="black";
+    }
+    function hide(){
+      var loader = document.getElementById('loader');
+      loader.style.display="none";
+    }
+</script>
+
 <body>
 <div style="display:inline-table" align="center">
 {% with messages = get_flashed_messages() %}
@@ -150,7 +166,9 @@ font-family: "Times New Roman", Times, serif;
       <p><strong>Error:</strong> {{ error }}
 {% endif %}
 
-<h1>Deferred Reports:</h1>
+<h2>Deferred Reports:</h2>
+<iframe id="loader" style="height:35px;display:none"></iframe>
+
 	<table border=1>
 	<th>
     <a id="x" href = "?reverse={{not reverse}}">Date/Time Submitted</a>
@@ -167,7 +185,7 @@ font-family: "Times New Roman", Times, serif;
         {{item_dict.creation_time}}
       </td>
 			<td>{{item_dict.report_name}}</td>
-			<td>{{item_dict.desc}}</td>
+      <td>{{item_dict.desc}}</td>
 			<td style="color:{{'limegreen' if item_dict.status=='READY' else 'red'}}" >{{item_dict.status}}</td>
             <td>
                 {% if item_dict.status=='READY' %}
@@ -180,11 +198,11 @@ font-family: "Times New Roman", Times, serif;
                     </form>
                     -->
 
-                    <form method="post" action="get_deferred_report" class="inline" target="report_frame">
+                    <form method="post" action="get_deferred_report" class="inline" target="report_frame" onsubmit="load()">
                             <button type="submit" name="ticket_name" value="{{name}}" class="link-button" >View Item</button>
                     </form>
 
-                    <form method="post" action="delete_item" class="inline">
+                    <form method="post" action="delete_item" class="inline" onsubmit="load()">
                         <input type="hidden" name="item_type" value="deferred"/>
                         <button type="submit" name="item_name" value="{{name}}" class="delete-button" >Delete Item</button>
                     </form>
@@ -202,8 +220,11 @@ font-family: "Times New Roman", Times, serif;
 <div style="display:inline-block">
     <br>
     <br>
-<h3>Note: Reports will show up in the frame below.</h3>
-    <iframe name="report_frame" style="position: absolute; height: 80%; width: 50% ">Report Appears Here</iframe>
+    <h3>Note: Reports will show up in the frame below.</h3>
+
+    <iframe name="report_frame" style="position: absolute; height: 80%; width: 50% " onload="hide()">
+      Report Appears Here
+    </iframe>
 </div>
 
 <ul>

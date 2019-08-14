@@ -10,8 +10,9 @@
 
              <style>
 body{
-background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: LightBlue;
+/*background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
+background-color: LightBlue;*/
+background-color: azure;
 background-size: cover;
 background-attachment: fixed;
 }
@@ -149,6 +150,14 @@ border: 2px solid #0D3093;
 
     
 </head>
+<script>
+    function load(){
+      var loader = document.getElementById('loader');
+      loader.srcdoc='<t align="center" style="color:yellow">Loading...</t>';
+      loader.style.display="inline-block";
+      loader.style.backgroundColor="black";
+    }
+</script>
     <body align="center">
 
       {% if not expand %}
@@ -173,7 +182,7 @@ border: 2px solid #0D3093;
             <br>
             <h3>Run or View Details for an existing schedule:</h3>
             <br>
-            <form>
+            <form onsubmit=load()>
                 <p style="display:inline">Schedule Name:</p>
                 <select name = "schedule_name" id="schedule_name">
                   {% for sched_name in schedules %}
@@ -189,6 +198,7 @@ border: 2px solid #0D3093;
             <form method="GET" ><input type="submit" name="expand" id="view_expanded_schedule"value="View Expanded Schedule Table"></input></form>
                 <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
             <p>Note: Schedules assumed to be in the Public Repository and are case sensitive.</p>
+
         </div>
 
       {% else %}
@@ -216,7 +226,7 @@ border: 2px solid #0D3093;
                     <td>{{item_dict.destinationAddress}}</td>
                     <td>{{item_dict.owner}}</td>
                     <td>
-                        <form>
+                        <form onsubmit=load()>
                           <input type="hidden" name="schedule_name" value="{{name}}"/>
                           <input type="submit" value = "Run Schedule" 
                             formaction="/run_schedule" formmethod="POST" id="button"/>
@@ -235,6 +245,9 @@ border: 2px solid #0D3093;
         </div>
 
       {% endif %}
+        <br>
+      <iframe id="loader" style="height:35px;display:none"></iframe>
+
     {% with messages = get_flashed_messages() %}
         {% if messages %}
            {% for message in messages %}

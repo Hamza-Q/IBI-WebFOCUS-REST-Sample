@@ -12,8 +12,7 @@
 
     <style>
 body{
-background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: lightcyan;
+background-color: azure;
 background-size: cover;
 background-attachment: fixed;
 }
@@ -99,8 +98,9 @@ border: 2px solid #0D3093;
 }
 
 .loader{
-  height:30px;
+  height:35px;
   width:200px;
+  float:middle;
 }
 
 .holds-the-iframe {
@@ -120,14 +120,16 @@ border: 2px solid #0D3093;
     <script>
         function loadDiv() {
           var frameHolder = document.getElementById('iframe-holder');
-          frameHolder.style.background="url(https://gifimage.net/wp-content/uploads/2017/09/ajax-loading-gif-transparent-background-8.gif) center center no-repeat";
-          document.getElementById('loader').srcdoc="Loading Report...";
+          frameHolder.style.background="url(https://i.gifer.com/Aj5c.gif) center center no-repeat";
+          document.getElementById('loader').srcdoc='<t align="center" style="color:yellow">Loading Report...</t>';
+          document.getElementById('loader').style.display="inline-block";
+          document.getElementById('loader').style.backgroundColor="black";
         }
         function clearDiv(){
           var frameHolder = document.getElementById('iframe-holder');
           frameHolder.style.backgroundImage="";
-          document.getElementById('loader').srcdoc="Finished Loading.";
-          document.getElementById('report_frame').style.display='block';
+          document.getElementById('loader').style.display="none";
+          document.getElementById('report_frame').style.display='inline-block';
         }
         function clearFrame(){
           var frame = document.getElementById('report_frame');
@@ -145,7 +147,7 @@ border: 2px solid #0D3093;
           onclick="loadDiv(); clearFrame();"
         />
     </form>
-    <iframe class="loader" id="loader"></iframe>
+    <iframe class="loader" id="loader" style="float:middle"></iframe>
  <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->
     <p>Note: Reports will show up in the frame below and may take some time to load; please wait a moment after clicking run.</p>
     <p>Reports assumed to be in the Public Repository and are case sensitive.</p>
@@ -154,7 +156,7 @@ border: 2px solid #0D3093;
 
     <div class="holds-the-iframe" id="iframe-holder">
       <iframe onload="clearDiv()" class="hidden" src="about:blank"
-       id="report_frame" name="report_frame" style="position: absolute; height: 70%; width: 90% ">
+       id="report_frame" name="report_frame" style="height: 100%; width: 90% ">
       </iframe>
     </div>
 

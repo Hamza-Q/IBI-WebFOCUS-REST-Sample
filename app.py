@@ -31,7 +31,7 @@ app = Flask(__name__)
 # TODO: Extract these from config file or env vars
 ibi_client_protocol = "http"
 ibi_client_host = "localhost"
-ibi_client_port = "8080"
+ibi_client_port = "8080" # standard is 80 for http and 443 for https
 ibi_rest_url =  \
     f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 ibi_default_folder_path = "WFC/Repository/Public"
@@ -69,36 +69,26 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-    # TODO: Remove hardcoded path URL
     response = wf_sess.get(
         f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs/ibfs/{path}',
         params = params, data = payload 
     )
-    # print(response)
-    with open("_path.xml", "w") as f:
-        print(response.text, file=f)
     
     files_xml_response = ET.fromstring(response.text)
     files_xml = files_xml_response.find('rootObject')
-    # breakpoint()
+
     # if requested a certain file type
     if file_type:
-        invalid_children = []
-
-
         # check children and find those without proper return type
-
+        invalid_children = []
         # TODO: refactor based on https://stackoverflow.com/questions/22817530/elementtree-element-remove-jumping-iteration
         # Note: removing from files_xml within first for loops leads to errors;
-        # for loops does not iterate over every child
+        # for loop does not iterate over every child
         for child in files_xml:
-            # print(child)
             if child.get("type") != file_type:
-                # print("not equals", child.get("type"))
                 invalid_children.append(child)
         for child in invalid_children:
             files_xml.remove(child)
-    # breakpoint()
     return files_xml
 
 def files_xml_to_list(files_xml):
@@ -218,79 +208,45 @@ def run_reports():
 @app.route('/run_report', methods=['GET', 'POST'])
 def run_report():
     report_name = request.form.get('report_name')
-    # print(report_name)
     if not report_name:
-        report_name = "Report1"
+        return redirect(url_for('run_reports'))
     wf_sess = wf_login()
-    
-    '''
-    url = 'http://localhost:8080/ibi_apps/rs/'
-    folderName = 'IBFS:/WFC/Repository/Public/'
-    folderName2 = 'Public'
-    reportName = 'Report1.fex'
-    
-    payload = dict()
-    payload['IBIRS_action'] = 'run'
-    payload['IBIRS_clientPath'] = 'http://localhost:5000/run_report'
-    payload['IBIRS_htmlPath'] = 'http://localhost:8080/ibi_apps/html'
-    payload['IBFS_comp_user'] = 'srvadmin'
-    payload['IBFS_comp_pass'] = 'srvadmin'
-    payload['IBIRS_path'] = folderName+reportName
-    '''
-    # Doesn't seem to change anything
-    IBIRS_clientPath = 'http://localhost:5000',
-    IBIRS_htmlPath = 'http://localhost:8080/ibi_apps/ibi_html'    
-    # IBIRS_clientPath='http://wwww.google.com'
-    # IBIRS_htmlPath='http://www.bing.com'
 
     payload = { 
         'IBIRS_action': 'run',
-        'IBIRS_clientPath': IBIRS_clientPath,
-        'IBIRS_htmlPath': IBIRS_htmlPath,
     }
     
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-    # TODO: Remove hardcoded URL
-    wf_response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
-                            data = payload )
-    # response = wf_sess.mr_run_report(folderName2, reportName, 'IBIRS_clientPath=%s' % IBIRS_clientPath)
-    #breakpoint()
-    #with open('test.html', 'w') as f:
-    #    f.write(response.text)
-    # print(response.headers)
-    # breakpoint()
-    # breakpoint()
-    # print(response)
-    # print(response.content)
+    wf_response = wf_sess.post( ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
+                                data = payload )
     
-    #breakpoint()
     report = wf_response.content
     content_type = wf_response.headers.get('Content-Type')
     if 'text/html' in content_type:
         response = make_response(report)
         return response
     
-    if 'image' in content_type:
+    elif 'image' in content_type:
         report_image = b64encode(report).decode('utf-8')
-        report_html = f'<img src="data:;base64,{report_image}"/>'
+        report_html = f'<html><body align="middle"><img src="data:image/png;base64,{report_image}"'
+        report_html+= 'style="background-color:white;"/></body></html>'
         response = make_response(report_html)
         # response.headers.set('Content-Type', wf_response.headers.get('Content-Type'))
-        #response.headers.set(
-           # 'Content-Disposition', 'attachment', filename=f'{report_name}.png') # Get proper image type?
-           # 'Content-Disposition', 'attachment', filename=f'{report_name}.png') # Get proper image type?
-           # 'Content-Disposition', 'inline') # Get proper image type?
         return response
-    # HTML document has links to other CSS/JS/JSON sources but below
-    # is not a great approach; requested resources may require 
-    # authentication which the browser requests will not have.
-    # If used, CORS must be enabled from all sources on WF Client
-    """ 
-     static_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
-     report = report.replace('/ibi_apps', static_url) 
-    """
 
+    # HTML document has links to other CSS/JS/JSON sources but below
+    # is not a good approach; requested resources may require 
+    # authentication which the browser requests will not have.
+    # If used, CORS must be enabled from all sources on WF Client 
+    # and WF Client itself must be reachable from accessing computer
+    """ 
+    static_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
+    report = report.replace('/ibi_apps', static_url) 
+    """
+    response = make_response(report)
+    response.headers.set('Content-Type', content_type)
     return response
 
 # Used to receive webfocus report local files (js/css) from proper source
@@ -304,17 +260,13 @@ def client_app_redirect(page):
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
     response = wf_sess.get(base_url+page, stream=True)
-    # response = requests.get(base_url+page, stream=True)
+
     # Note: Python requests automatically decodes gzip response so set stream=True for raw bytes
     # My knowledge of compression/encoding is limited so need to verify correct method for this;
     # Should I be returning this gzip compressed response as it currently is coded
     # or should I return the decoded response.content with 'Content-Encoding' header removed?
     # Should any other response headers be changed/removed?
     
-    # print(response.headers)   
-    # return response.content, response.status_code, response.headers.items()
-    # print(response.request.headers)
-    print (response.cookies)
 
     return response.raw.read(), response.status_code, response.headers.items()
 
@@ -359,8 +311,6 @@ def schedules():
             item_dict['destinationAddress'] = casterObject.get('destinationAddress')
             item_dict['owner'] = casterObject.get('owner')
             schedule_items[item_name] = item_dict
-        # print(item.attrib)
-        # tickets_print = pprint.pformat(deferred_tickets)
 
         # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated, most to least recent
         schedule_items_list = sorted(schedule_items.items(), key= lambda x: x[1]['creation_time'], reverse=True)
@@ -385,8 +335,7 @@ def run_schedule():
     # TODO: Remove hardcoded URL
     response = wf_sess.post(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
                             data = payload )
-    # print(response)
-    # print(response.content)
+
     if response.status_code == 200:
         flash(f"Successfully added schedule: {schedule_name} to the queue.")
     elif response.status_cdode == 404:
@@ -455,16 +404,15 @@ def view_schedule_log():
 
     # Parse xml for schedule id
     if response.status_code!=200:
-        print("error status code != 200")
-        return "Error: Could not retrieve schedule."
+        return 'Error 404: Could not communicate with WebFOCUS Client<br> <a href="{url_for("schedules")}">Go Back</a>', 404
     root = ET.fromstring(response.content)
     if root.attrib['returncode'] != "10000":
         print("error retcode != 10k")
-        return "Error: Could not retrieve schedule."
+        return f'Error 404: Could not retrieve schedule. <br> <a href="{url_for("schedules")}">Go Back</a>', 404
     for child in root:
         if child.tag == 'rootObject':
             rootObject = child
-    schedule_id = rootObject.attrib['handle'] # handle = external id?
+    schedule_id = rootObject.attrib['handle'] 
 
     # Parse xml for more schedule information
     for child in rootObject:
@@ -510,8 +458,8 @@ def view_schedule_log():
     # re=use payload with csrf token from before
     response = wf_sess.get(url, params=params, data=payload) 
     if response.status_code != 200:
-        print("Error: Could not receive log data")
-        return "error"
+        error="Could not receive log data"
+        return render_template('schedule_log_info.html', schedule=schedule, error=error)
 
     # log xml response is very messy and unintuitive
 

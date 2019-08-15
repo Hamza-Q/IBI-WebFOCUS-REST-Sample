@@ -6,24 +6,16 @@ Created by Hamza Qureshi
 Hamza_Qureshi@ic.ibi.com
 """
 
-
-# Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect, flash, g, send_from_directory, make_response, send_file, abort
-import requests
-# wfrs is an API wrapper for WebFOCUS REST calls, currently in development
 import wfrs
+from flask import Flask, render_template, request, session, \
+                    url_for, redirect, flash, g, send_from_directory, \
+                    make_response, send_file, abort
+import requests
 import xml.etree.ElementTree as ET
-import pprint
 import datetime
-import time 
+import time
 import os
 from base64 import b64encode
-
-
-# sha256 hashing for password encryption - TBC
-# import sha256
-
-
 
 
 # Initialize app
@@ -31,31 +23,35 @@ app = Flask(__name__)
 # TODO: Extract these from config file or env vars
 ibi_client_protocol = "http"
 ibi_client_host = "localhost"
-ibi_client_port = "8080" # standard is 80 for http and 443 for https
+ibi_client_port = "8080"  # standard is 80 for http and 443 for https
 ibi_rest_url =  \
     f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 ibi_default_folder_path = "WFC/Repository/Public"
 
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+                               'favicon.ico',
+                               mimetype='image/vnd.microsoft.icon')
 
-# creates and returns a signed in webfocus session object
+
+# Creates and returns a signed in webfocus session object
 # TODO: Add proper security, maybe add current user to a list in WF
 def wf_login():
-    # g is the application context; objects in g are created and destroyed 
+    # g is the application context; g objects are created and destroyed
     # with the same lifetime as the current request to the server
-    # By creating the WF Session within g, we can use one connection per request
-    # and sign out at the end, rather than sign in/out for every action
+    # By creating the WF Session within g, we can use one connection
+    # per request and sign out at the end,
+    # rather than sign in/out for every action
 
     # Create a WF Session if one does not already exist
     if 'wf_sess' not in g:
         g.wf_sess = wfrs.Session()
         g.wf_sess.mr_sign_on(
-            protocol = ibi_client_protocol, 
-            host = ibi_client_host, 
-            port = ibi_client_port
+            protocol=ibi_client_protocol,
+            host=ibi_client_host,
+            port=ibi_client_port
         )
     return g.wf_sess
 
@@ -63,25 +59,22 @@ def wf_login():
 # gets xml ET object of response
 def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
     wf_sess = wf_login()
-    
-    params = {'IBIRS_action':'list'}
+    params = {'IBIRS_action': 'list'}
     payload = {}
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-
     response = wf_sess.get(
-        f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs/ibfs/{path}',
-        params = params, data = payload 
+        f'{ibi_rest_url}/ibfs/{path}',
+        params=params, data=payload
     )
-    
     files_xml_response = ET.fromstring(response.text)
     files_xml = files_xml_response.find('rootObject')
-
     # if requested a certain file type
     if file_type:
         # check children and find those without proper return type
         invalid_children = []
-        # TODO: refactor based on https://stackoverflow.com/questions/22817530/elementtree-element-remove-jumping-iteration
+        # TODO: refactor based on
+        # https://stackoverflow.com/questions/22817530/elementtree-element-remove-jumping-iteration
         # Note: removing from files_xml within first for loops leads to errors;
         # for loop does not iterate over every child
         for child in files_xml:
@@ -91,15 +84,16 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
             files_xml.remove(child)
     return files_xml
 
+
 def files_xml_to_list(files_xml):
     item_list = []
     for item in files_xml:
         item_name = item.attrib.get("name")
         item_list.append(item_name)
     return item_list
-  
 
-# signs out of WF after request if it exists (closes connection)
+
+# signs out of WF after request (closes connection)
 @app.teardown_appcontext
 def teardown_wf_sess(e=None):
     wf_sess = g.pop('wf_sess', None)
@@ -121,41 +115,28 @@ def index():
 def login_auth():
     if session.get('user_name'):
         return redirect(url_for('index'))
+
     if request.method == 'GET':
         return redirect(url_for('index'))
 
-    # grabs information from the forms
     user_name = request.form['user_name']
-    # password = request.form['password']
+    password = request.form['password']
 
-    # authenticate user and password here
+    # TODO: authenticate user_name+password
 
     # if acceptable credentials:
-    if user_name:
+    if user_name and password:
         # creates a session for the the user
         session['user_name'] = user_name
-
-        # Not making any WF requests for now so no need to sign in
-        """
-        # TODO: make sign on + csrf token retrieval use the proper auth channels
-        # Potential TODO: store request session variables into Flask session object 
-        
-        # Save IBI_CSRF_Token_Value from response to sign-on request.
-
-        session['WF-JSessionID'] = wf_sess_id
-        """
-
         return redirect(url_for('home'))
     else:
-        # returns an error message
-        # error = 'Invalid email or password'
+        flash('Invalid username or password')
         return redirect(url_for('index'))
 
 
 @app.route('/home')
 def home():
     if not session.get('user_name'):
-        #  error = "You must be logged in to view this page"
         return redirect(url_for('index'))
     return render_template('home.html')
 
@@ -181,67 +162,68 @@ def delete_item():
         payload['IBIRS_action'] = 'deleteTicket'
         payload['IBIRS_service'] = 'defer'
         payload['IBIRS_ticketName'] = item_name
-        response = wf_sess.post(ibi_rest_url, data = payload)
+        response = wf_sess.post(ibi_rest_url, data=payload)
     else:
         payload['IBIRS_action'] = 'delete'
-        response = wf_sess.post(ibi_rest_url + f'/ibfs/WFC/Repository/Public/{item_name}',
-                            data = payload )
-    message = f"Deleted Item: {item_name}" if response.status_code == 200 else "Could not delete item"
+        response = wf_sess.post(
+            ibi_rest_url + f'/ibfs/WFC/Repository/Public/{item_name}',
+            data=payload
+        )
+    message = f"Deleted Item: {item_name}" if response.status_code == 200 \
+              else "Could not delete item"
     flash(message) 
     return redirect(request.referrer)
-
-
 
 
 @app.route('/run_reports')
 def run_reports():
     if not session.get('user_name'):
         return redirect(url_for('index'))
-
     files_xml = list_files_in_path_xml(file_type="FexFile")
     # reports is a list of report names
     reports = files_xml_to_list(files_xml)
     return render_template('run_reports.html', reports=reports)
 
 
-# TODO: Test CORS policy for reports using css/js from ibi_apps via /client_app_redirect
+
 @app.route('/run_report', methods=['GET', 'POST'])
 def run_report():
     report_name = request.form.get('report_name')
     if not report_name:
         return redirect(url_for('run_reports'))
-    wf_sess = wf_login()
 
-    payload = { 
-        'IBIRS_action': 'run',
-    }
-    
+    wf_sess = wf_login()
+    payload = {'IBIRS_action': 'run'}
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-    wf_response = wf_sess.post( ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
-                                data = payload )
-    
+    wf_response = wf_sess.post(
+        ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
+        data=payload
+    )
+
     report = wf_response.content
     content_type = wf_response.headers.get('Content-Type')
     if 'text/html' in content_type:
         response = make_response(report)
         return response
-    
+
     elif 'image' in content_type:
         report_image = b64encode(report).decode('utf-8')
-        report_html = f'<html><body align="middle"><img src="data:image/png;base64,{report_image}"'
-        report_html+= 'style="background-color:white;"/></body></html>'
+        report_html = f'''
+            <html><body align="middle">
+                <img src="data:image/png;base64,{report_image}"
+                style="background-color:white;"/>
+            </body></html>'''
         response = make_response(report_html)
-        # response.headers.set('Content-Type', wf_response.headers.get('Content-Type'))
         return response
 
     # HTML document has links to other CSS/JS/JSON sources but below
-    # is not a good approach; requested resources may require 
+    # is not a good approach; requested resources may require
     # authentication which the browser requests will not have.
-    # If used, CORS must be enabled from all sources on WF Client 
+    # If used, CORS must be enabled from all sources on WF Client
     # and WF Client itself must be reachable from accessing computer
-    """ 
+    """
     static_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     report = report.replace('/ibi_apps', static_url) 
     """
@@ -249,25 +231,18 @@ def run_report():
     response.headers.set('Content-Type', content_type)
     return response
 
+
 # Used to receive webfocus report local files (js/css) from proper source
-# Currently always sends response header as {'Content-Type': 'text/html'} even for .js/.css files
-# TODO: Look into a better way to do this
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
-    #headers = request.headers
-    if not request.referrer:
+    if not request.referrer:  # Do not allow this url to be used directly
         abort(403)
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
+    # Note: Python requests automatically decodes a gzip-encoded response
+    # so set stream=True for raw bytes
+
     response = wf_sess.get(base_url+page, stream=True)
-
-    # Note: Python requests automatically decodes gzip response so set stream=True for raw bytes
-    # My knowledge of compression/encoding is limited so need to verify correct method for this;
-    # Should I be returning this gzip compressed response as it currently is coded
-    # or should I return the decoded response.content with 'Content-Encoding' header removed?
-    # Should any other response headers be changed/removed?
-    
-
     return response.raw.read(), response.status_code, response.headers.items()
 
 
@@ -276,21 +251,15 @@ def client_app_redirect(page):
 def schedules():
     if not session.get('user_name'):
         return redirect(url_for('index'))
-    # folder = "WFC/Repository/Public"
-    
+
     sched_files_xml = list_files_in_path_xml(file_type="CasterSchedule")
 
     if not request.args.get("expand"):
-        # schedules is a list of schedule names
         schedules = files_xml_to_list(sched_files_xml)
-        
-        rep_files_xml = list_files_in_path_xml(file_type="FexFile")
-        reports = files_xml_to_list(rep_files_xml)
-        return render_template('schedules.html', schedules=schedules, reports=reports)
+        return render_template('schedules.html', schedules=schedules)
     else:
-        schedules = sched_files_xml
         schedule_items = dict()
-        for item in schedules: # always a schedule item
+        for item in sched_files_xml:  # always a schedule item
             item_dict = {}
             item_name = item.attrib['name']
             item_dict['desc'] = item.attrib['description']
@@ -300,14 +269,15 @@ def schedules():
             unixtime_created_ms = int(item.attrib['createdOn'])
             datetime_created = unixtime_ms_to_datetime(unixtime_created_ms)
             item_dict['creation_time'] = datetime_created
-        
             # casterObject is a child of item
             casterObject = item.find('casterObject')
-            # Get destination address, owner, last time executed
-            if casterObject.get('sendMethod') != 'EMAIL': # only support email schedules
+
+            # Only support email schedules
+            if casterObject.get('sendMethod') != 'EMAIL':
                 continue
 
-            # parse property tagged entries; reportname is an attribute
+            # Get destination address, owner, last time executed by
+            # parsing property tagged entries; reportname is an attribute
             item_dict['destinationAddress'] = casterObject.get('destinationAddress')
             item_dict['owner'] = casterObject.get('owner')
             schedule_items[item_name] = item_dict
@@ -344,6 +314,7 @@ def run_schedule():
         flash(f"Undetermined error; Response status code: {response.status_code}")
     return redirect(request.referrer)
 
+"""
 # impossible with current documentation
 @app.route('/create_schedule', methods=['POST'])
 def create_schedule():
@@ -371,7 +342,7 @@ def create_schedule():
     print(response.content)
     breakpoint()
     return redirect(request.referrer)
-
+"""
 
 # IN DEVELOPMENT
 @app.route('/view_schedule_log', methods=['GET'])
@@ -512,11 +483,7 @@ def view_schedule_log():
                     format_func = log_formatter[key] 
                     # if key is 'owner', nothing to format
                     attributes[key] = format_func(attribute.text) if format_func else attribute.text
-                    # print(key, attributes[key])
         log_data.append(attributes)
-
-    with open("_f.xml", 'w') as f:
-        print(response.text, file=f)
 
     # sort data by start time, most recent to least recent
     log_data.sort(key = lambda x:x['startTime'], reverse=True)
@@ -582,13 +549,13 @@ def update_schedule():
 
 @app.route('/defer_reports')
 def defer_reports():
-    # print(session.get('deferred_items'))
     if not session.get('user_name'):
         return redirect(url_for('index'))
 
     files_xml = list_files_in_path_xml(file_type="FexFile")
-    # reports is a list of report names
+    
     reports = []
+
     for item in files_xml:
         report_name = item.attrib.get("name")
         reports.append(report_name)
@@ -730,11 +697,9 @@ def deferred_reports_table():
             
 
         deferred_tickets[item_name] = item_dict
-        # print(item.attrib)
-    # tickets_print = pprint.pformat(deferred_tickets)
 
     # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated
-    # Default is most to least recent; can be changed by flag in querystring
+    # Default is most to least recent; can be changed by reverse flag in querystring
     deferred_tickets = sorted(deferred_tickets.items(), key= lambda x: x[1]['creation_time'], reverse= not sort_reversed)
 
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets, reverse=sort_reversed)

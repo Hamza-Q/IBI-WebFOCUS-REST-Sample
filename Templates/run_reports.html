@@ -138,7 +138,7 @@ border: 2px solid #0D3093;
     </script>
 
     <form action="/run_report" id="run_report "target="report_frame" method="post">
-       <h2> Report Name:  </h2>
+       <h2> Select a Report Name:  </h2>
         <select name = "report_name" id="report_name">
             {% for rep_name in reports %}
               <option value="{{rep_name}}">{{rep_name}}</option>
@@ -146,6 +146,7 @@ border: 2px solid #0D3093;
         <input type="submit" value = "Submit" id="button"
           onclick="loadDiv(); clearFrame();"
         />
+        </select>
     </form>
     <iframe class="loader" id="loader" style="float:middle"></iframe>
  <!--   <p><a href="/run_report" target="report_frame">Run Report</a></p> -->

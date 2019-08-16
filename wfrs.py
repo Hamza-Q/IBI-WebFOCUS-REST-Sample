@@ -2,12 +2,12 @@ import xml.etree.ElementTree as ET
 import requests
 
 
-class Session(requests.Session):
+class WF_Session(requests.Session):
     def __init__(self):
         requests.Session.__init__(self)
         self.IBIWF_SES_AUTH_TOKEN = None
 
-    def save_ibi_csrf_token(self, xml):
+    def _save_ibi_csrf_token(self, xml):
         """Save IBI_CSRF_Token_Value from response to sign-on request."""
 
         tree = ET.fromstring(xml)
@@ -29,7 +29,6 @@ class Session(requests.Session):
         self.host = host
         self.port = port
 
-        method = 'post'
         data = {
             'IBIRS_action': 'signOn',
             'IBIRS_userName': userid,
@@ -39,17 +38,15 @@ class Session(requests.Session):
                                                    self.host,
                                                    self.port)
 
-        response = self.request(method=method, url=url, data=data)
-        self.save_ibi_csrf_token(response.content)
-        return response
+        response = self.post(url=url, data=data)
+        self._save_ibi_csrf_token(response.content)
 
     def mr_signoff(self):
         """WebFOCUS Repository: Signing-Off From WebFOCUS."""
 
-        method = 'post'
         data = {'IBIRS_action': 'signOff'}
         url = '{}://{}:{}/ibi_apps/rs/ibfs'.format(self.protocol,
                                                    self.host,
                                                    self.port)
-
-        return self.request(method=method, url=url, data=data)
+        self.IBIWF_SES_AUTH_TOKEN = None
+        self.post(url=url, data=data)

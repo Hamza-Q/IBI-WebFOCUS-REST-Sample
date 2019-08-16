@@ -164,21 +164,7 @@ border: 2px solid #0D3093;
       <br>
       
         <div style="display:inline-block; text-align: center;">
-           {#
-            <h3 style="text-align: center">Change Schedule Destination</h3>
-              <form action="/update_schedule" method="post">
-    <p style="display:inline">Schedule Name:  </p>
-                  <select name = "schedule_name" id="schedule_name">
-                      {% for sched_name in schedules %}
-                        <option value={{sched_name}}>{{sched_name}}</option>
-                      {% endfor %}
-                  </select>
-    <p style="display:inline"> Email To: </p>
-                <input type="text" name="destinationAddress" id="email" required/>
-                <input type="submit" value = "Submit" id="button"/>
-            </form>
-            #}
-
+           
             <br>
             <h3>Run or View Details for an existing schedule:</h3>
             <br>

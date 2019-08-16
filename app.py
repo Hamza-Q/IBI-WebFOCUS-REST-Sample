@@ -16,6 +16,10 @@ import datetime
 import time
 import os
 from base64 import b64encode
+import sys
+import win32com.client
+import pythoncom
+import threading
 
 
 # Initialize app
@@ -28,6 +32,35 @@ ibi_rest_url =  \
     f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 ibi_default_folder_path = "WFC/Repository/Public"
 
+
+@app.route('/doc')
+def pdf():
+    return redirect(url_for('doc', file_type='.pdf'))
+
+
+# For documentation file
+@app.route('/doc<file_type>')
+def doc(file_type):
+    try:
+        if file_type != '.pdf':
+            file_type = '.docx'
+        wdFormat = {'.pdf': 17, '.docx': 16}[file_type]
+        pythoncom.CoInitialize()
+        in_file = os.path.abspath(r'C:\Users\HQ15164\Embedded_WF\Embedding WebFOCUS into Python Application.DOCX')
+        out_file = os.path.abspath(r'C:\Users\HQ15164\Embedded_WF\_Embedding WebFOCUS into Python Application2'+file_type)
+        word = win32com.client.Dispatch('Word.Application')
+        doc = word.Documents.Open(in_file)
+        doc.SaveAs(out_file, FileFormat=wdFormat)
+        doc.Close()
+        # word.Quit()
+        return send_from_directory(
+            directory=app.root_path,
+            filename="_Embedding WebFOCUS into Python Application2"+file_type,
+            as_attachment=False if file_type == '.pdf' else True,
+            attachment_filename="Embedding WebFOCUS into Python Application"+file_type
+        )
+    except:
+        abort(404)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -47,7 +80,7 @@ def wf_login():
 
     # Create a WF Session if one does not already exist
     if 'wf_sess' not in g:
-        g.wf_sess = wfrs.Session()
+        g.wf_sess = wfrs.WF_Session()
         g.wf_sess.mr_sign_on(
             protocol=ibi_client_protocol,
             host=ibi_client_host,
@@ -60,14 +93,14 @@ def wf_login():
 def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
     wf_sess = wf_login()
     params = {'IBIRS_action': 'list'}
-    payload = {}
-    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+    # payload = {}
+    # if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
+    #    payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
     response = wf_sess.get(
         f'{ibi_rest_url}/ibfs/{path}',
-        params=params, data=payload
+        params=params, # data=payload
     )
-    files_xml_response = ET.fromstring(response.text)
+    files_xml_response = ET.fromstring(response.content)
     files_xml = files_xml_response.find('rootObject')
     # if requested a certain file type
     if file_type:
@@ -88,14 +121,14 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
 def files_xml_to_list(files_xml):
     item_list = []
     for item in files_xml:
-        item_name = item.attrib.get("name")
+        item_name = item.get("name")
         item_list.append(item_name)
     return item_list
 
 
 # signs out of WF after request (closes connection)
 @app.teardown_appcontext
-def teardown_wf_sess(e=None):
+def teardown_wf_sess(error=None):
     wf_sess = g.pop('wf_sess', None)
     if wf_sess is not None:
         wf_sess.mr_signoff()
@@ -166,7 +199,7 @@ def delete_item():
     else:
         payload['IBIRS_action'] = 'delete'
         response = wf_sess.post(
-            ibi_rest_url + f'/ibfs/WFC/Repository/Public/{item_name}',
+            f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{item_name}',
             data=payload
         )
     message = f"Deleted Item: {item_name}" if response.status_code == 200 \
@@ -183,7 +216,6 @@ def run_reports():
     # reports is a list of report names
     reports = files_xml_to_list(files_xml)
     return render_template('run_reports.html', reports=reports)
-
 
 
 @app.route('/run_report', methods=['GET', 'POST'])
@@ -261,12 +293,12 @@ def schedules():
         schedule_items = dict()
         for item in sched_files_xml:  # always a schedule item
             item_dict = {}
-            item_name = item.attrib['name']
-            item_dict['desc'] = item.attrib['description']
-            item_dict['summary'] = item.attrib.get('summary')
+            item_name = item.get('name')
+            item_dict['desc'] = item.get('description')
+            item_dict['summary'] = item.get('summary')
             # 13 digit unix epoch time in ms listed in xml
             # Convert to 10 digit secs unixtime then format as datetime string
-            unixtime_created_ms = int(item.attrib['createdOn'])
+            unixtime_created_ms = int(item.get('createdOn'))
             datetime_created = unixtime_ms_to_datetime(unixtime_created_ms)
             item_dict['creation_time'] = datetime_created
             # casterObject is a child of item
@@ -283,28 +315,28 @@ def schedules():
             schedule_items[item_name] = item_dict
 
         # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated, most to least recent
-        schedule_items_list = sorted(schedule_items.items(), key= lambda x: x[1]['creation_time'], reverse=True)
+        schedule_items_list = sorted(
+            schedule_items.items(), 
+            key=lambda x: x[1]['creation_time'], 
+            reverse=True
+        )
 
         return render_template('schedules.html', schedules=schedule_items_list, expand=True)
 
 @app.route('/run_schedule', methods=['POST'])
 def run_schedule():
     schedule_name = request.form.get('schedule_name')
-    if not schedule_name:
-        
-        schedule_name = "TestSchedule.sch"
     wf_sess = wf_login()
-    
-    payload = { 
-        'IBIRS_action':'run',
+    payload = {
+        'IBIRS_action': 'run',
     }
-    
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-    # TODO: Remove hardcoded URL
-    response = wf_sess.post(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
-                            data = payload )
+    response = wf_sess.post(
+        f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
+        data=payload 
+    )
 
     if response.status_code == 200:
         flash(f"Successfully added schedule: {schedule_name} to the queue.")
@@ -314,37 +346,7 @@ def run_schedule():
         flash(f"Undetermined error; Response status code: {response.status_code}")
     return redirect(request.referrer)
 
-"""
-# impossible with current documentation
-@app.route('/create_schedule', methods=['POST'])
-def create_schedule():
-    report_name = request.form.get('report_name')
-    dest_email = request.form.get('destinationAddress')
-    creation_time = int(time.time()*1000) # in ms
-    schedule_name = report_name.split('.')[0] + str(creation_time) + '.sch'
-    url = ibi_rest_url + '/ibfs/WFC/Repository/Public/' + schedule_name
-    
-    wf_sess = wf_login()
 
-    '''
-    sched_xml = create_schedule_xml(report_name,dest_email)
-    sched_xml_string = ET.tostring(sched_xml)
-    '''
-
-    # get schedule, update, send
-    payload = {
-        'IBIRS_action':'get',
-    }
-    response = wf_sess.post(url, data=payload)
-    if response.status_code==200:
-        print('communication successful')
-    flash("Attempted to create schedule")
-    print(response.content)
-    breakpoint()
-    return redirect(request.referrer)
-"""
-
-# IN DEVELOPMENT
 @app.route('/view_schedule_log', methods=['GET'])
 def view_schedule_log():
     schedule_name = request.args.get('schedule_name')
@@ -354,24 +356,25 @@ def view_schedule_log():
         # schedules is a list of schedule names
         schedules = []
         for item in files_xml:
-            schedule_name = item.attrib.get("name")
+            schedule_name = item.get("name")
             schedules.append(schedule_name)
         return render_template("schedule_log_info.html", schedule=None, schedules=schedules)
     wf_sess = wf_login()
 
     # Get schedule xml object    
     params = { 
-        'IBIRS_action':'get',
+        'IBIRS_action': 'get',
     }
     
-    payload=dict()
+    # payload = dict()
 
-    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
+    # if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
+    #     payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
 
-
-    response = wf_sess.get(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
-                            params=params, data=payload )
+    response = wf_sess.get(
+        f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
+        params=params, # data=payload 
+    )
 
     # Parse xml for schedule id
     if response.status_code!=200:
@@ -389,22 +392,22 @@ def view_schedule_log():
     for child in rootObject:
         if child.tag == 'casterObject':
             casterObject = child
-    lastTimeExecuted_unix = casterObject.attrib.get('lastTimeExecuted')
+    lastTimeExecuted_unix = casterObject.get('lastTimeExecuted')
     if lastTimeExecuted_unix:
         lastTimeExecuted = unixtime_ms_to_datetime(int(lastTimeExecuted_unix))
-    nextRunTime = casterObject.attrib.get('nextRunTime')
+    nextRunTime = casterObject.get('nextRunTime')
     if not nextRunTime:
         nextRunTime = "None Scheduled"
     schedule = {
         'Name': schedule_name,
-        'Owner':    casterObject.attrib['owner'],
+        'Owner':    casterObject.get('owner'),
         'ID':   schedule_id,
-        'Description':  casterObject.attrib.get('description'),
-        'Summary':      casterObject.attrib.get('summary'),
-        'Send Method':   casterObject.attrib.get('sendMethod'),
-        'Destination Address':   casterObject.attrib.get('destinationAddress'),
+        'Description':  casterObject.get('description'),
+        'Summary':      casterObject.get('summary'),
+        'Send Method':   casterObject.get('sendMethod'),
+        'Destination Address':   casterObject.get('destinationAddress'),
         'Last Time Executed':     lastTimeExecuted,
-        'Status Last Executed':   casterObject.attrib.get('statusLastExecuted'),
+        'Status Last Executed':   casterObject.get('statusLastExecuted'),
         'Next Run Time':  nextRunTime,
         'Procedures':   []
     }
@@ -416,20 +419,19 @@ def view_schedule_log():
 
     # taskList can have multiple items
     for item in taskList:
-        procedureName = item.attrib['procedureName']
+        procedureName = item.get('procedureName')
         schedule['Procedures'].append(procedureName)
 
     # Have schedule id, now use it to retrieve log list 
-    url =   f"{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}" + \
-            "/ibi_apps/services/LogServiceREST/getLogInfoListByScheduleId"
-    
+    url = f"{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}" + \
+          "/ibi_apps/services/LogServiceREST/getLogInfoListByScheduleId"
+
     params = dict()
     params['scheduleId'] = schedule_id
 
-    # re=use payload with csrf token from before
-    response = wf_sess.get(url, params=params, data=payload) 
+    response = wf_sess.get(url, params=params) 
     if response.status_code != 200:
-        error="Could not receive log data"
+        error = "Could not receive log data"
         return render_template('schedule_log_info.html', schedule=schedule, error=error)
 
     # log xml response is very messy and unintuitive
@@ -492,59 +494,6 @@ def view_schedule_log():
     return render_template('schedule_log_info.html', schedule=schedule, log_data=log_data)
 
 
-# TODO
-@app.route('/update_schedule', methods=['POST'])
-def update_schedule():
-    schedule_name = request.form.get('schedule_name')
-    email = request.form.get('destinationAddress')
-    wf_sess = wf_login()
-    # Get schedule xml object    
-    params = { 
-        'IBIRS_action':'get',
-    }
-    payload=dict()
-    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-    response = wf_sess.get(f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
-                            params=params, data=payload )
-    breakpoint()
-    # Parse xml for schedule id
-    if response.status_code!=200:
-        print("error status code != 200")
-        return "Error: Could not retrieve schedule."
-    root = ET.fromstring(response.content)
-    if root.attrib['returncode'] != "10000":
-        print("error retcode != 10k")
-        return "Error: Could not retrieve schedule."
-    for child in root:
-        if child.tag == 'rootObject':
-            rootObject = child
-
-    # Parse xml for more schedule information
-    for child in rootObject:
-        if child.tag == 'casterObject':
-            casterObject = child
-    casterObject.attrib['destinationAddress'] = email
-
-    # find destination object
-    distList = casterObject.find('.//distributionList')
-    distList.attrib['singleAddress'] = email
-
-    payload['IBIRS_action'] = 'put'
-    payload['IBIRS_replace'] = 'true'
-    payload['IBIRS_object'] = ET.tostring(rootObject)
-
-    url = ibi_rest_url + '/ibfs/WFC/Repository/Public/' + schedule_name
-    response = wf_sess.post(url, data=payload)
-    if response.status_code==200:
-        print('communication successful')
-
-    flash("Attempted to create schedule")
-    print(response.content)
-    breakpoint()
-
-    return redirect(request.referrer)
-
 
 
 @app.route('/defer_reports')
@@ -557,7 +506,7 @@ def defer_reports():
     reports = []
 
     for item in files_xml:
-        report_name = item.attrib.get("name")
+        report_name = item.get("name")
         reports.append(report_name)
 
     return render_template('defer_reports.html', reports=reports)
@@ -595,7 +544,7 @@ def defer_report():
         flash("Error: Could not defer report.")
         return redirect(url_for('defer_reports'))
     root = ET.fromstring(response.content)
-    if root.attrib['returncode'] != "10000":
+    if root.get('returncode') != "10000":
         print("error retcode != 10k")
         flash("Error: Could not defer report.")
         return redirect(url_for('defer_reports'))
@@ -695,7 +644,6 @@ def deferred_reports_table():
                     if property_node.attrib['key'] == 'IBIMR_fex_name':
                         item_dict['report_name'] = property_node.attrib['value']
             
-
         deferred_tickets[item_name] = item_dict
 
     # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated
@@ -704,134 +652,6 @@ def deferred_reports_table():
 
     return render_template("deferred_reports_table.html", deferred_items = deferred_tickets, reverse=sort_reversed)
 
-
-# IN DEVELOPMENT - will potentially abandon feature
-def create_schedule_xml(report_name, to_email):
-
-    root = ET.Element('rootObject')
-    root.attrib['_jt'] = 'IBFSCasterObject'
-    root.attrib['description'] = f"Created via REST; runs {report_name}"
-    root.attrib['type'] = 'CasterSchedule'
-
-    caster = ET.SubElement(root, 'casterObject')
-    caster.attrib['_jt'] = 'CasterSchedule'
-    caster.attrib['active'] = 'Active'
-    caster.attrib['deleteJobAfterRun'] = 'DeleteJobAfterRun'
-    caster.attrib['description'] = f"Created via REST; runs {report_name}"
-    caster.attrib['owner'] = 'admin' 
-    caster.attrib['priority'] = '1'
-    caster.attrib['traceType'] = '0'
-
-    notifs = ET.SubElement(caster, 'notification')
-    notifs.attrib['_jt'] = 'CasterScheduleNotification'
-    notifs.attrib['addressForBriefNotification'] = ''
-    notifs.attrib['addressForFullNotification'] = ''
-    notifs.attrib['description'] = ''
-    notifs.attrib['from'] = ''
-    notifs.attrib['subject'] = report_name
-    notifs.attrib['type'] = 'ALWAYS'
-
-    distrib = ET.SubElement(caster, 'distributionList')
-    distrib.attrib['_jt'] = 'array'
-
-    # use a factory to get type and return xml object accordingly
-
-    distrib.attrib['itemsClass'] = 'CasterScheduleDistribution'
-    distrib.attrib['size'] = '1'
-
-    item = ET.SubElement(distrib, 'item')
-    item.attrib['_jt'] = 'CasterScheduleDistributionEmail'
-    item.attrib['authEnabled'] = 'False' # look into details of this
-    #item.attrib['authPassword'] = item.attrib['authUserid'] = 'admin' # 
-    item.attrib['description'] = 'Email' #
-    item.attrib['enabled'] = 'true'
-    item.attrib['index'] = '0'
-    item.attrib['inLineMessage'] = 'test' # change to input variable
-    item.attrib['inLineTaskIndex'] = ''
-    item.attrib['mailFrom'] = ''
-    item.attrib['mailReplyAddress'] = ''
-    item.attrib['mailServerName'] = 'devmail.ibi.com' # find a way to get this information properly
-    item.attrib['mailSubject'] = 'Scheduled Report'
-    item.attrib['sendingReportAsAttachment'] = 'true'
-    # Where is this information available? Shouldn't have to manually config here
-    item.attrib['sslEnabled'] = 'false' 
-    item.attrib['tlsEnabled'] = 'false'
-    item.attrib['zipFileName'] = '' # shouldn't be used but is it still needed in object?
-    item.attrib['zipResult'] = 'false'
-    #item.attrib['']
-
-    destination = ET.SubElement(item, 'destination')
-    destination.attrib['_jt'] = 'CasterScheduleDestination'
-    destination.attrib['distributionFile'] = ''
-    destination.attrib['distributionList'] = ''
-    destination.attrib['distributionListFullPath'] = ''
-    destination.attrib['singleAddress'] = to_email
-    destination.attrib['type'] = 'SINGLE_ADDRESS'
-
-    dyn = ET.SubElement(destination, 'dynamicAddress')
-    dyn.attrib['_jt'] = 'CasterScheduleDynamicAddress'
-    dyn.attrib['password'] = dyn.attrib['procedureName'] = dyn.attrib['serverName'] = dyn.attrib['userName'] = ''
-
-    time_info = ET.SubElement(caster, 'timeInfoList')
-    time_info.attrib['_jt'] = 'array'
-    time_info.attrib['itemsClass'] = 'CasterScheduleTimeInfo'
-    time_info.attrib['size'] = '1'
-
-    time_item = ET.SubElement(time_info, 'item')
-    time_item.attrib = {
-        'description':'',
-        'enabled':'true',
-        'index':'0',
-        'name':''
-    }
-    start_time = ET.SubElement(time_item, 'startTime')
-    start_time.attrib = {
-        '_jt':'calendar',
-        'time': str(int(time.time()*1000))
-    }
-
-    task_list = ET.SubElement(caster, 'taskList')
-    task_list.attrib = {
-        '_jt':'array',
-        'itemsClass':'CasterScheduleTask',
-        'size':'1'
-    }
-    task_item = ET.SubElement(task_list, 'item')
-    task_item.attrib = {
-        'alertEnabled': 'false',
-        'burst':'false',
-        'description':'insert desc',
-        'domainHREF':'',
-        'enabled':'true',
-        'execId':'admin',
-        'execPassword':'admin',
-        'firstPostProcessingProcedure':'',
-        'firstPreProcessingProcedure':'',
-        'procedureDescription':'',
-        'procedureName': f'IBFS:/WFC/Repository/Public/{report_name}',
-        'reportName':report_name,
-        'secondPostProcessingProcedure':'',
-        'secondPreProcessingProcedure':'',
-        'sendFormat':'%DEFAULT%',
-        'serverName':'EDASERVE',
-    }
-    
-    # param = ET.SubElement(task_item, 'parameterList')
-    # param.attrib={
-    #     '_jt':'array',
-    #     'itemsClass':'CasterScheduleParameter',
-    #     'size':'0'
-    # }
-
-
-
-    #x = wfrs.Session().pretty_print_xml(ET.tostring(root))
-    #print(x)
-
-    # print(ET.dump(root))
-
-    return root
-
 def unixtime_ms_to_datetime(unixtime_ms):
     unixtime = unixtime_ms/1000
     datetime_created = datetime.datetime.fromtimestamp(unixtime)
@@ -839,9 +659,8 @@ def unixtime_ms_to_datetime(unixtime_ms):
     return datetime_string
 
 if __name__ == '__main__':
-    # create_schedule_xml('Report1.fex', 'hamza_qureshi@ic.ibi.com')
     # secret key randomly generated via commandline:
     # python -c 'import os; print(os.urandom(16))'
     # TODO: Add security; should import from config file or env variable
-    app.secret_key=b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'
+    app.secret_key = b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'
     app.run(host='0.0.0.0', port=5000, debug=True)

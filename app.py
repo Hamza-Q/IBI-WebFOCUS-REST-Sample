@@ -271,6 +271,7 @@ def client_app_redirect(page):
         abort(403)
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
+
     # Note: Python requests automatically decodes a gzip-encoded response
     # so set stream=True for raw bytes
 
@@ -488,7 +489,7 @@ def view_schedule_log():
         log_data.append(attributes)
 
     # sort data by start time, most recent to least recent
-    log_data.sort(key = lambda x:x['startTime'], reverse=True)
+    log_data.sort(key=lambda x: x['startTime'], reverse=True)
     # breakpoint()
 
     return render_template('schedule_log_info.html', schedule=schedule, log_data=log_data)
@@ -517,11 +518,9 @@ def defer_reports():
 def defer_report():
     report_name = request.form.get('report_name')
     tDesc = request.form.get('IBIRS_tDesc')
-    if not report_name:
-        report_name = "Report1"
     wf_sess = wf_login()
     
-    payload = { 'IBIRS_action':'runDeferred' }
+    payload = {'IBIRS_action': 'runDeferred' }
     payload['IBIRS_tDesc'] = tDesc
     payload['IBIRS_path'] = f"IBFS:/WFC/Repository/Public/{report_name}"
     payload['IBIRS_parameters'] = "__null"
@@ -532,37 +531,24 @@ def defer_report():
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 
-    response = wf_sess.post(base_url,
-                            data = payload )
-    # print(response)
-    # print(response.content)
+    response = wf_sess.post(base_url, data=payload)
 
-    # WIP:  Parse XML for ticket id, store in session['deferred_items'] dict 
-    #       with key=ticket_name, value=report_name
-    if response.status_code!=200:
-        print("error status code != 200")
+    if response.status_code != 200:
+        print("Error status code != 200")
         flash("Error: Could not defer report.")
         return redirect(url_for('defer_reports'))
+
     root = ET.fromstring(response.content)
+
+    # returncode 10000 means it ran successfully
     if root.get('returncode') != "10000":
-        print("error retcode != 10k")
+        print("Error retcode != 10k")
         flash("Error: Could not defer report.")
         return redirect(url_for('defer_reports'))
-    for child in root:
-        if child.tag == 'rootObject':
-            rootObject = child
-    ticket_name = rootObject.attrib['name']
-    # print(ticket_name)
 
-    if 'deferred_items' not in session:
-        session['deferred_items'] = {}
-
-    session['deferred_items'][ticket_name] = report_name
-    session.modified=True 
-    # breakpoint()
-    # print(session)
     flash(f"Successfully ran deferred report: {report_name}")
     return redirect(url_for('defer_reports'))
+
 
 # Retrieves deferred report data
 @app.route('/get_deferred_report', methods=['GET', 'POST'])
@@ -571,7 +557,7 @@ def get_deferred_report():
     # print(ticket_name)
     if not ticket_name:
         return "Error: No ticket selected"
-    
+
     wf_sess = wf_login()
 
     params = { 

@@ -1,9 +1,8 @@
 """
 WebFOCUS embedded in a Python Web Application
-MVP highlighting most important WebFOCUS REST calls
-TODO: Structure app into a proper directory format
+Sample application highlighting most important WebFOCUS REST calls
 Created by Hamza Qureshi
-Hamza_Qureshi@ic.ibi.com
+hq343@nyu.edu
 """
 
 import wfrs
@@ -351,44 +350,37 @@ def run_schedule():
 @app.route('/view_schedule_log', methods=['GET'])
 def view_schedule_log():
     schedule_name = request.args.get('schedule_name')
-
-    if not schedule_name:
+    # If no schedule requested, give users a dropdown of available
+    if not schedule_name: 
         files_xml = list_files_in_path_xml(file_type="CasterSchedule")
         # schedules is a list of schedule names
         schedules = []
         for item in files_xml:
             schedule_name = item.get("name")
             schedules.append(schedule_name)
-        return render_template("schedule_log_info.html", schedule=None, schedules=schedules)
+        return render_template(
+            "schedule_log_info.html", schedule=None, schedules=schedules
+        )
     wf_sess = wf_login()
-
-    # Get schedule xml object    
-    params = { 
-        'IBIRS_action': 'get',
-    }
-    
-    # payload = dict()
-
-    # if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-    #     payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-
+    # Get schedule xml object
+    params = {'IBIRS_action': 'get'}
     response = wf_sess.get(
         f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{schedule_name}',
-        params=params, # data=payload 
+        params=params
     )
-
     # Parse xml for schedule id
-    if response.status_code!=200:
-        return 'Error 404: Could not communicate with WebFOCUS Client<br> <a href="{url_for("schedules")}">Go Back</a>', 404
+    if response.status_code != 200:
+        return 'Error: Could not communicate with WebFOCUS Client' + \
+            f'<br> <a href="{url_for("schedules")}">Go Back</a>', 404
     root = ET.fromstring(response.content)
     if root.attrib['returncode'] != "10000":
         print("error retcode != 10k")
-        return f'Error 404: Could not retrieve schedule. <br> <a href="{url_for("schedules")}">Go Back</a>', 404
+        return 'Error 404: Could not retrieve selected schedule.' + \
+            f'<br> <a href="{url_for("schedules")}">Go Back</a>', 404
     for child in root:
         if child.tag == 'rootObject':
             rootObject = child
     schedule_id = rootObject.attrib['handle'] 
-
     # Parse xml for more schedule information
     for child in rootObject:
         if child.tag == 'casterObject':
@@ -415,7 +407,7 @@ def view_schedule_log():
     # Parse xml for procedure information
 
     for child in casterObject:
-        if child.tag =='taskList':
+        if child.tag == 'taskList':
             taskList = child
 
     # taskList can have multiple items
@@ -432,8 +424,8 @@ def view_schedule_log():
 
     response = wf_sess.get(url, params=params) 
     if response.status_code != 200:
-        error = "Could not receive log data"
-        return render_template('schedule_log_info.html', schedule=schedule, error=error)
+        flash(f"Could not receive log data for {schedule_name}")
+        return render_template('schedule_log_info.html', schedule=schedule)
 
     # log xml response is very messy and unintuitive
 
@@ -443,7 +435,7 @@ def view_schedule_log():
     log_data = list()
 
     # tags are of the form "{url}tag" in the xml; parse out the actual tag
-    format_tag = lambda x:x.split('}')[1]
+    format_tag = lambda x: x.split('}')[1]
 
     # timestamps are of the form "yyyy-mm-ddThh:mm:ss.xxx-xx:xx; 
     # omit anything after seconds; split will return tuple as (date_string, time_string)
@@ -529,9 +521,8 @@ def defer_report():
 
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-    base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/rs'
 
-    response = wf_sess.post(base_url, data=payload)
+    response = wf_sess.post(ibi_rest_url, data=payload)
 
     if response.status_code != 200:
         print("Error status code != 200")
@@ -560,7 +551,7 @@ def get_deferred_report():
 
     wf_sess = wf_login()
 
-    params = { 
+    params = {
         'IBIRS_action': 'getReport',
         'IBIRS_service': 'defer',
         'IBIRS_htmlPath': 'http://localhost:8080/ibi_apps/ibi_html/'

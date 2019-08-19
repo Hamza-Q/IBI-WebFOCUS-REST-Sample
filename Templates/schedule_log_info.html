@@ -7,12 +7,10 @@
     <br>
    <!-- <h1>Company X</h1> -->
 
-    <h1>Schedule Information:</h1>
+    <h2>Schedule Information:</h2>
 
     <style>
 body{
-/*background-image: url("https://cdn.wallpapersafari.com/5/20/7NVLhA.jpg");
-background-color: LightBlue;*/
 background-color: azure;
 background-size: cover;
 background-attachment: fixed;
@@ -100,8 +98,6 @@ table, th, td {
 background-color: white;
 border: 1px solid #0D3093;
 text-align: left;
-width: 40%;
-height: 30%;
 color: #0D3093;
 font-size: 20px;;
 }
@@ -118,20 +114,19 @@ font-size: 20px;;
 <body>
     {% if not schedule %}
         <h2>Please select a schedule:</h2>
-        <form>
+        <form action="/view_schedule_log" method="GET">
             <select name = "schedule_name" id="schedule_name">
                 {% for sched_name in schedules %}
                     <option value="{{sched_name}}">{{sched_name}}</option>
                 {% endfor %}
-            <input type="submit" value = "Get Info + Log" formaction="/view_schedule_log" formmethod="GET" id="button"
+            <input type="submit" value = "Get Info + Log" id="button"
               onclick="load()"
             />
         </form>
         <iframe id="loader" style="height:35px;display:none"></iframe>
-    {% else %}
     
-    
-
+    {# continuing from the no schedule selected HTML code from previous section #}
+    {% else %} 
         <table>
             {% for key,value in schedule.items() %}
                 <tr>
@@ -148,7 +143,7 @@ font-size: 20px;;
   
       {% else %}
     <h2>Logs:</h2>
-        <table border=3>
+        <table>
             
             {# TODO: refactor looping through a header tuple rather than hardcoded #}
 

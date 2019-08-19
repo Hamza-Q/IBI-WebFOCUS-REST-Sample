@@ -422,15 +422,12 @@ def view_schedule_log():
     params = dict()
     params['scheduleId'] = schedule_id
 
-    response = wf_sess.get(url, params=params) 
-    if response.status_code != 200:
+    log_response = wf_sess.get(url, params=params)
+    if log_response.status_code != 200:
         flash(f"Could not receive log data for {schedule_name}")
         return render_template('schedule_log_info.html', schedule=schedule)
 
-    # log xml response is very messy and unintuitive
-
-    log_root = ET.fromstring(response.content)
-
+    log_root = ET.fromstring(log_response.content)
     # log_data is a list of log_item attribute dictionaries
     log_data = list()
 
@@ -438,22 +435,24 @@ def view_schedule_log():
     format_tag = lambda x: x.split('}')[1]
 
     # timestamps are of the form "yyyy-mm-ddThh:mm:ss.xxx-xx:xx; 
-    # omit anything after seconds; split will return tuple as (date_string, time_string)
+    # omit anything after seconds; split will return tuple as 
+    # (date_string, time_string)
     # so join these as a string separated by a space
     def format_time(time_string):
         date_str, time_str = time_string.split('T')
-        time_str = time_str[:8] # first 8 digits are hh:mm:ss
+        time_str = time_str[:8]  # first 8 digits are hh:mm:ss
         return f"{date_str} {time_str}"
 
     # errorType will be a string of a 1-digit code, mapped in this dictionary:
     error_code_values = {
-        "0":"None",
-        '1':'Error',
-        '2':'Warning',
-        '6':'Running',
-        '7':'Running With Error'
+        "0": "None",
+        '1': 'Error',
+        '2': 'Warning',
+        '6': 'Running',
+        '7': 'Running With Error'
     }
-    format_error = lambda error_code:error_code_values.get(error_code)
+
+    format_error = lambda error_code: error_code_values.get(error_code)
 
     # relevant xml data for table column headers as keys.
     # text formattor function as value
@@ -461,7 +460,7 @@ def view_schedule_log():
         'startTime': format_time,
         'endTime': format_time, 
         'errorType': format_error, 
-        'owner': None, 
+        'owner': lambda x: x,  # Nothing to format
     }
 
     for log_item in log_root:
@@ -477,12 +476,11 @@ def view_schedule_log():
                     # function from log_formatter that will format the xml text
                     format_func = log_formatter[key] 
                     # if key is 'owner', nothing to format
-                    attributes[key] = format_func(attribute.text) if format_func else attribute.text
+                    attributes[key] = format_func(attribute.text)
         log_data.append(attributes)
 
     # sort data by start time, most recent to least recent
     log_data.sort(key=lambda x: x['startTime'], reverse=True)
-    # breakpoint()
 
     return render_template('schedule_log_info.html', schedule=schedule, log_data=log_data)
 
@@ -548,29 +546,16 @@ def get_deferred_report():
     # print(ticket_name)
     if not ticket_name:
         return "Error: No ticket selected"
-
     wf_sess = wf_login()
-
     params = {
         'IBIRS_action': 'getReport',
         'IBIRS_service': 'defer',
         'IBIRS_htmlPath': 'http://localhost:8080/ibi_apps/ibi_html/'
     }
     params['IBIRS_ticketName'] = ticket_name
-    
-    payload = dict()
-
-    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-
-    # works with post request but not get
-    response = wf_sess.get(ibi_rest_url, params=params,
-                            data = payload )
-    # print(response)
-    # print(response.content)
-    # breakpoint()
+    response = wf_sess.get(ibi_rest_url, params=params)
     return response.content
-    
+
 
 @app.route('/deferred_reports_table', methods=['GET'])
 def deferred_reports_table():
@@ -578,25 +563,21 @@ def deferred_reports_table():
         return redirect('/')
     wf_sess = wf_login()
 
-    # unintuitive
+    # used to sort table in html
     sort_reversed = True if request.args.get('reverse') == 'True' else False
 
     # retrieve list of deferred tickets
-    payload = {"IBIRS_action":"listTickets"}
+    payload = {"IBIRS_action": "listTickets"}
     payload['IBIRS_service'] = 'defer'
     payload['IBIRS_filters'] = payload['IBIRS_args'] = '__null'
     payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-    response = wf_sess.get(ibi_rest_url, params=payload) # will be xml
-
+    response = wf_sess.get(ibi_rest_url, params=payload)  # will be xml
 
     # convert xml response to minimal dict for easy access
-    # TODO: perform xml parsing in new function?
-    # breakpoint()
     tree = ET.fromstring(response.text)
     root = tree.find('rootObject')
 
     deferred_tickets = dict()
-
     for item in root:
         item_dict = {}
         item_name = item.attrib['name']
@@ -604,10 +585,7 @@ def deferred_reports_table():
         # 13 digit unix epoch time in ms listed in xml
         # Convert to 10 digit secs unixtime then format as datetime string
         unixtime_created_ms = int(item.attrib['createdOn'])
-        unixtime_created = unixtime_created_ms/1000
-        datetime_created = datetime.datetime.fromtimestamp(unixtime_created)
-        item_dict['creation_time'] = datetime_created.strftime("%Y-%m-%d %H:%M:%S")
-        
+        item_dict['creation_time'] = unixtime_ms_to_datetime(unixtime_created_ms)
         # status and properties are a child of item in xml
         for node in item:
             # Create sub elements
@@ -616,7 +594,7 @@ def deferred_reports_table():
                 item_dict['status'] = 'READY' if status=='CTH_DEFER_READY' else 'NOT READY'
 
             # parse property tagged entries; reportname is an attribute
-            if node.tag =='properties':
+            if node.tag == 'properties':
                 for property_node in node:
                     if property_node.attrib['key'] == 'IBIMR_fex_name':
                         item_dict['report_name'] = property_node.attrib['value']
@@ -625,9 +603,17 @@ def deferred_reports_table():
 
     # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated
     # Default is most to least recent; can be changed by reverse flag in querystring
-    deferred_tickets = sorted(deferred_tickets.items(), key= lambda x: x[1]['creation_time'], reverse= not sort_reversed)
+    deferred_tickets = sorted(
+        deferred_tickets.items(), 
+        key=lambda x: x[1]['creation_time'], 
+        reverse=not sort_reversed
+    )
 
-    return render_template("deferred_reports_table.html", deferred_items = deferred_tickets, reverse=sort_reversed)
+    return render_template(
+        "deferred_reports_table.html", 
+        deferred_items=deferred_tickets, 
+        reverse=sort_reversed
+    )
 
 def unixtime_ms_to_datetime(unixtime_ms):
     unixtime = unixtime_ms/1000

@@ -135,18 +135,14 @@ font-size: 20px;;
             {% endfor %}
         </table>        
       
-        {% if not log_data %}
+    {% if not log_data %}
         {% if error %}
           <p><strong>Error:</strong> {{ error }}
         {% endif %}
   
-  
-      {% else %}
+    {% else %}
     <h2>Logs:</h2>
         <table>
-            
-            {# TODO: refactor looping through a header tuple rather than hardcoded #}
-
             <th>Start Time</th>
             <th>End Time</th>
             <th>Error?</th>
@@ -156,7 +152,8 @@ font-size: 20px;;
                 <tr>                    
                     <td>{{log_item.startTime}}</td>
                     <td>{{log_item.endTime}}</td>
-                    <td style=color:{{'limegreen' if log_item.errorType=='None' else 'orange' if log_item.errorType=='Running' else 'red'}}>
+                    <td style=color:{{'limegreen' if log_item.errorType=='None' 
+                    else 'orange' if log_item.errorType=='Running' else 'red'}}>
                       <strong>{{log_item.errorType}}</strong>
                     </td>
                     <td>{{log_item.owner}}</td>

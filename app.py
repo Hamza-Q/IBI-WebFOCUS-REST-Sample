@@ -222,24 +222,35 @@ def run_report():
     report_name = request.form.get('report_name')
     if not report_name:
         return redirect(url_for('run_reports'))
-
     wf_sess = wf_login()
-    payload = {'IBIRS_action': 'run'}
-    if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
-        payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
-
-    wf_response = wf_sess.post(
-        ibi_rest_url + f'/ibfs/WFC/Repository/Public/{report_name}',
-        data=payload
+    # Used to properly return PDF and EXCEL files from WebFOCUS
+    turn_off_redirection_xml = \
+        '''<rootObject _jt="HashMap">
+                <entry>
+                    <key _jt="string" value="IBFS_contextVars"/>
+                    <value _jt="HashMap">
+                        <entry>
+                            <key _jt="string" value="IBIWF_redirect"/>
+                            <value _jt="string" value="NEVER"/>
+                        </entry>
+                    </value>
+                </entry>
+            </rootObject>
+        '''
+    params = {
+        'IBIRS_action': 'run',
+        'IBIRS_args': turn_off_redirection_xml
+    }
+    wf_response = wf_sess.get(
+        f'{ibi_rest_url}/ibfs/WFC/Repository/Public/{report_name}',
+        params=params
     )
-
     report = wf_response.content
     content_type = wf_response.headers.get('Content-Type')
     if 'text/html' in content_type:
         response = make_response(report)
         return response
-
-    elif 'image' in content_type:
+    elif 'image' in content_type: # send image as base 64 encoded data url
         report_image = b64encode(report).decode('utf-8')
         report_html = f'''
             <html><body align="middle">
@@ -248,16 +259,6 @@ def run_report():
             </body></html>'''
         response = make_response(report_html)
         return response
-
-    # HTML document has links to other CSS/JS/JSON sources but below
-    # is not a good approach; requested resources may require
-    # authentication which the browser requests will not have.
-    # If used, CORS must be enabled from all sources on WF Client
-    # and WF Client itself must be reachable from accessing computer
-    """
-    static_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
-    report = report.replace('/ibi_apps', static_url) 
-    """
     response = make_response(report)
     response.headers.set('Content-Type', content_type)
     return response
@@ -266,7 +267,8 @@ def run_report():
 # Used to receive webfocus report local files (js/css) from proper source
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
-    if not request.referrer:  # Do not allow this url to be used directly
+    # Do not allow this url to be used directly
+    if 'http://localhost:5000' not in request.referrer:  
         abort(403)
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
@@ -508,8 +510,8 @@ def defer_reports():
 def defer_report():
     report_name = request.form.get('report_name')
     tDesc = request.form.get('IBIRS_tDesc')
+
     wf_sess = wf_login()
-    
     payload = {'IBIRS_action': 'runDeferred' }
     payload['IBIRS_tDesc'] = tDesc
     payload['IBIRS_path'] = f"IBFS:/WFC/Repository/Public/{report_name}"
@@ -572,9 +574,12 @@ def deferred_reports_table():
     payload['IBIRS_filters'] = payload['IBIRS_args'] = '__null'
     payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
     response = wf_sess.get(ibi_rest_url, params=payload)  # will be xml
-
     # convert xml response to minimal dict for easy access
     tree = ET.fromstring(response.text)
+    response_code = tree.get("returncode")
+    if response_code != 10000:
+        flash("Error receiving deferred items")
+        return redirect(url_for('home'))
     root = tree.find('rootObject')
 
     deferred_tickets = dict()
@@ -589,9 +594,10 @@ def deferred_reports_table():
         # status and properties are a child of item in xml
         for node in item:
             # Create sub elements
-            if node.tag=='status':
+            if node.tag =='status':
                 status = node.attrib['name']
-                item_dict['status'] = 'READY' if status=='CTH_DEFER_READY' else 'NOT READY'
+                item_dict['status'] = 'READY' if status == 'CTH_DEFER_READY' \
+                    else 'NOT READY'
 
             # parse property tagged entries; reportname is an attribute
             if node.tag == 'properties':
@@ -602,7 +608,7 @@ def deferred_reports_table():
         deferred_tickets[item_name] = item_dict
 
     # Creates a list of 2-tuples (item_name, item_dict) sorted by datecreated
-    # Default is most to least recent; can be changed by reverse flag in querystring
+    # Default is most to least recent; can be changed by reverse flag in query
     deferred_tickets = sorted(
         deferred_tickets.items(), 
         key=lambda x: x[1]['creation_time'], 
@@ -614,6 +620,7 @@ def deferred_reports_table():
         deferred_items=deferred_tickets, 
         reverse=sort_reversed
     )
+
 
 def unixtime_ms_to_datetime(unixtime_ms):
     unixtime = unixtime_ms/1000

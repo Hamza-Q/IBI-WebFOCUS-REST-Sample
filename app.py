@@ -9,16 +9,13 @@ import wfrs
 from flask import Flask, render_template, request, session, \
                     url_for, redirect, flash, g, send_from_directory, \
                     make_response, send_file, abort
+import urllib
 import requests
 import xml.etree.ElementTree as ET
 import datetime
 import time
 import os
 from base64 import b64encode
-import sys
-import win32com.client
-import pythoncom
-import threading
 
 
 # Initialize app
@@ -34,32 +31,11 @@ ibi_default_folder_path = "WFC/Repository/Public"
 
 @app.route('/doc')
 def pdf():
-    return redirect(url_for('doc', file_type='.pdf'))
-
-
-# For documentation file
-@app.route('/doc<file_type>')
-def doc(file_type):
-    try:
-        if file_type != '.pdf':
-            file_type = '.docx'
-        wdFormat = {'.pdf': 17, '.docx': 16}[file_type]
-        pythoncom.CoInitialize()
-        in_file = os.path.abspath(r'C:\Users\HQ15164\Embedded_WF\Embedding WebFOCUS into Python Application.DOCX')
-        out_file = os.path.abspath(r'C:\Users\HQ15164\Embedded_WF\_Embedding WebFOCUS into Python Application2'+file_type)
-        word = win32com.client.Dispatch('Word.Application')
-        doc = word.Documents.Open(in_file)
-        doc.SaveAs(out_file, FileFormat=wdFormat)
-        doc.Close()
-        # word.Quit()
-        return send_from_directory(
+    return send_from_directory(
             directory=app.root_path,
-            filename="_Embedding WebFOCUS into Python Application2"+file_type,
-            as_attachment=False if file_type == '.pdf' else True,
-            attachment_filename="Embedding WebFOCUS into Python Application"+file_type
+            filename="Embedding WebFOCUS into Python Application.pdf"
         )
-    except:
-        abort(404)
+
 
 @app.route('/favicon.ico')
 def favicon():
@@ -250,7 +226,7 @@ def run_report():
     if 'text/html' in content_type:
         response = make_response(report)
         return response
-    elif 'image' in content_type: # send image as base 64 encoded data url
+    elif 'image' in content_type:  # send image as base 64 encoded data url
         report_image = b64encode(report).decode('utf-8')
         report_html = f'''
             <html><body align="middle">
@@ -267,17 +243,27 @@ def run_report():
 # Used to receive webfocus report local files (js/css) from proper source
 @app.route('/ibi_apps/<path:page>', methods=['GET', 'POST'])
 def client_app_redirect(page):
-    # Do not allow this url to be used directly
-    if 'http://localhost:5000' not in request.referrer:  
+    # Security: Only allow this url to serve content
+    # when referred from this application
+    referrer_url = request.referrer
+    referrer = urllib.parse.urlparse(referrer_url)
+    referrer_base_url = f'{referrer.scheme}://{referrer.hostname}'
+    referrer_base_url += f':{referrer.port}/' if referrer.port else '/'
+    if request.host_url != referrer_base_url:
         abort(403)
+
+    # Use this line of code if you copy ibi html folder into static:
+    # return send_from_directory('static', f'ibi_static/{page}')
+    
     base_url = f'{ibi_client_protocol}://{ibi_client_host}:{ibi_client_port}/ibi_apps/'
     wf_sess = wf_login()
 
-    # Note: Python requests automatically decodes a gzip-encoded response
+    # Python requests automatically decodes a gzip-encoded response
     # so set stream=True for raw bytes
-
     response = wf_sess.get(base_url+page, stream=True)
+    # Forward response content and headers to user
     return response.raw.read(), response.status_code, response.headers.items()
+
 
 
 # Schedules home page: get dropdown of schedules in the Public Repository
@@ -545,18 +531,51 @@ def defer_report():
 @app.route('/get_deferred_report', methods=['GET', 'POST'])
 def get_deferred_report():
     ticket_name = request.form.get('ticket_name')
-    # print(ticket_name)
     if not ticket_name:
         return "Error: No ticket selected"
     wf_sess = wf_login()
+    turn_off_redirection_xml = \
+        '''<rootObject _jt="HashMap">
+                <entry>
+                    <key _jt="string" value="IBFS_contextVars"/>
+                    <value _jt="HashMap">
+                        <entry>
+                            <key _jt="string" value="IBIWF_redirect"/>
+                            <value _jt="string" value="NEVER"/>
+                        </entry>
+                    </value>
+                </entry>
+            </rootObject>
+        '''
     params = {
         'IBIRS_action': 'getReport',
         'IBIRS_service': 'defer',
-        'IBIRS_htmlPath': 'http://localhost:8080/ibi_apps/ibi_html/'
+        'IBIRS_args': turn_off_redirection_xml
     }
     params['IBIRS_ticketName'] = ticket_name
-    response = wf_sess.get(ibi_rest_url, params=params)
-    return response.content
+    wf_response = wf_sess.get(ibi_rest_url, params=params)
+    report = wf_response.content
+    content_type = wf_response.headers.get('Content-Type')
+    if 'text/html' in content_type:
+        response = make_response(report)
+        return response
+    elif 'image' in content_type:  # send image as base 64 encoded data url
+        report_image = b64encode(report).decode('utf-8')
+        report_html = f'''
+            <html><body align="middle">
+                <img src="data:image/png;base64,{report_image}"
+                style="background-color:white;"/>
+            </body></html>'''
+        response = make_response(report_html)
+        return response
+    elif 'pdf' in content_type:
+        print(wf_response.status_code)
+        response = make_response(report)
+        response.headers.set('Content-Type', content_type)
+        return response    
+    response = make_response(report)
+    response.headers.set('Content-Type', content_type)
+    return response
 
 
 @app.route('/deferred_reports_table', methods=['GET'])
@@ -577,7 +596,7 @@ def deferred_reports_table():
     # convert xml response to minimal dict for easy access
     tree = ET.fromstring(response.text)
     response_code = tree.get("returncode")
-    if response_code != 10000:
+    if response_code != '10000':
         flash("Error receiving deferred items")
         return redirect(url_for('home'))
     root = tree.find('rootObject')

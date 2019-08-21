@@ -77,7 +77,13 @@ a.active {
 
 </head>
 <body>
-
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+     {% for message in messages %}
+        {{ message }}
+     {% endfor %}
+  {% endif %}
+{% endwith %}
 <ul>
     <li><img src="https://freepngimg.com/download/globe/6-2-globe-free-png-image.png" id="logo" height="50px" width-="50px" style="padding: 7px; float: left;"/></li>
   <li><a class="active" href="/home" id="home">Home</a></li>
@@ -87,6 +93,8 @@ a.active {
   <li><a href="/defer_reports" id="defer_reports">Defer Reports</a></li>
     <li><a href="deferred_reports_table" id="deferred_reports_table">View Deferred Reports</a></li>
     <li><a href="/logout" id="logout">Logout</a></li>
+    <li><a href="/doc">PDF DOC</a></li>
+    <li><a href="/doc.docx">WORD DOC</a></li>
 </ul>
 
 

@@ -81,8 +81,6 @@ def list_files_in_path_xml(path=ibi_default_folder_path, file_type=""):
     if file_type:
         # check children and find those without proper return type
         invalid_children = []
-        # TODO: refactor based on
-        # https://stackoverflow.com/questions/22817530/elementtree-element-remove-jumping-iteration
         # Note: removing from files_xml within first for loops leads to errors;
         # for loop does not iterate over every child
         for child in files_xml:
@@ -161,7 +159,7 @@ def delete_item():
     item_name = request.form.get('item_name')
     item_type = request.form.get('item_type')
     wf_sess = wf_login()
-    
+
     payload = dict()
     if wf_sess.IBIWF_SES_AUTH_TOKEN is not None:
         payload['IBIWF_SES_AUTH_TOKEN'] = wf_sess.IBIWF_SES_AUTH_TOKEN
@@ -651,5 +649,5 @@ if __name__ == '__main__':
     # secret key randomly generated via commandline:
     # python -c 'import os; print(os.urandom(16))'
     # TODO: Add security; should import from config file or env variable
-    app.secret_key = b't]S\xfe\xc7*z\x9b\xde\xde\x94n\xb3\x1e\x85\x14'
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.secret_key = 'Insert Secret Key Here'
+    app.run(host='0.0.0.0', port=5000)

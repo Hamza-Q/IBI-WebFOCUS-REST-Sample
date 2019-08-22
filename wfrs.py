@@ -1,3 +1,10 @@
+"""
+wfrs.py
+Very simple authenticated API wrapper for requests.Session object
+  for use with WebFOCUS
+Modeled from Ira Kaplan at Ira_Kaplan@ibi.com
+"""
+
 import xml.etree.ElementTree as ET
 import requests
 
